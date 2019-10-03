@@ -3,6 +3,7 @@
 #include <gsl/gsl_math.h>
 #include <math.h>
 #include <time.h> 
+#include "constants.h"
 
 typedef struct package {
 		int id;
@@ -13,48 +14,61 @@ typedef struct package {
 		short band;		
 	} package_t;
 
+/** Generate a random 0-100 number
+ */
 int roll100(){
 	const int HUNDRED_PERCENT = 100;
-
-	int lowRange = 0;	  
+	int lowRange = ZERO;	  
 	int hiRange = HUNDRED_PERCENT;
-	
 	int percentRoll = (rand() % (hiRange - lowRange + 1)) + lowRange;
-
 	return percentRoll;
 }
 
 
 // =============================================== DEFINE PACKAGE ATRIBUTES ===============================================
 
-
+/** Define the weight of packages according to their priority, assuming radiactive
+ * packages are very heavy, in this version this is arbitrary.
+ */
 float measureWeight (int priority){
-	int maxNormalWeight = 9;
+	int maxNormalWeight = 9;	// could turn to cts if important
 	int minNormalWeight = 1;
-	if (priority==1){
+	if (priority==URGENT){
 		return 2.0;
-	} else if (priority==2) {
+	} else if (priority==RADIOACTIVE) {
 		return 15.0;
 	} else {
-		return (rand() % (maxNormalWeight - minNormalWeight + 1));
+		return (rand() % (maxNormalWeight - minNormalWeight + 1))+1.0; // could make all random or semi-random
 	}
-	
-	return 1.0;
 }
 
+/** Choose on which side of the band the package starts based on the probability 
+ * of the package being on the left
+ */
 short chooseSide (int pLeft){
 	int sideRoll = (rand() % (100 + 1));
 	if (sideRoll > pLeft) {
-		return 0;
+		return LEFT_SIDE;
 	} else {
-		return 1;
+		return RIGHT_SIDE;
 	}
 }
 
-short assignBand (int pTop, int pMiddle, int pBottom){
-	
-	return 0;
-}	
+/** Choose in which band will the package be sent based on the probability of the
+ * probability it will be sent on the sign band and the random band
+ * 
+ */
+short assignBand (int pSignBand, int pRandomBand){
+	int bandSelect = roll100();
+
+	if (bandSelect > HUNDRED_PERCENT-pSignBand) {
+		return SIGN_BAND;
+	} else if (bandSelect < pRandomBand) {
+		return RANDOM_BAND;
+	} else {
+		return W_BAND;
+	}
+}
 
 
 /** Returns the type of package base on a percentile roll
@@ -67,26 +81,21 @@ short assignBand (int pTop, int pMiddle, int pBottom){
   * 		1 : priority
   *   		2 : radioactive
   */
-
 int packageType (int pRads, int pPrime) {
-	
-	const int HUNDRED_PERCENT = 100;
-	const int radioactive = 2;	// Send in real time
-	const int priority = 1;		// Send asap
-	const int normal = 0;		// Send when possible
 	
 	int packageType = roll100()+1;
 	
 	if (packageType < pRads) {
-		return radioactive;
+		return RADIOACTIVE;
 	} else if (packageType > HUNDRED_PERCENT-pPrime) {
-		return priority;
+		return URGENT;
 	}
 	else {
-		return normal;
+		return NORMAL;
 	}
 }
 
+// Test function
 void testPackageType () {
   int pRads = 20;
   int pPrime = 20;
@@ -110,12 +119,19 @@ void testPackageType () {
 	printf ("received: %d normal packages, %d priority packages and %d radioactive packages \n", norm, prio, rads);
 }
 
+/** Create a package 
+ * 
+ * packageCounter: auto-incremented package id/position on the array
+ * newPackage: pointer to the package in the array we are defining
+ * pRads: probability that the package is radioactive, read from .config
+ * pUrge: probability that the package is urgent, read from .config
+ */
 void createPackage(int* packageCounter, package_t* newPackage, int pRads, int pUrge){
 
 		int pPriority = packageType(pRads,pUrge);
 		float pWeight = measureWeight(pPriority);
-		short pSide = chooseSide(80);
-		short pBand = assignBand(40, 30, 30);
+		short pSide = chooseSide(80);				// define probability of side somewhere else
+		short pBand = assignBand(40, 30);			// define probability of band somewhere else
 					
 		newPackage->id = *packageCounter;
 		newPackage->weight = pWeight;
@@ -128,21 +144,21 @@ void createPackage(int* packageCounter, package_t* newPackage, int pRads, int pU
 		printf ("Created package %d \n", newPackage->id);
 }
 
+// Test function
 void checkPackage(int i, package_t* testPackage){
 	printf("Checking package %d \n", i);
 	printf("  Package id: %d \n", testPackage->id);
-	printf("  Package weight: %f \n", testPackage->weight);
+	printf("  Package weight: %.2f \n", testPackage->weight);
 	printf("  Package side: %d \n", testPackage->side);
 	printf("  Package piority: %d \n", testPackage->priority);
 	printf("  Package status: %d \n", testPackage->status);
 	printf("  Package in band: %d \n", testPackage->band);
-	
 }
 
 
 // =============================================== PROBABILITY DISTRIBUTIONS ===============================================
 
-/** Calculate the probability distribution function based on which cycle
+/** Calculate the probability distribution function (pdf) based on which cycle
  * the program is running. This generates packages following the 
  * probability distribution. *** Might be not what the teacher asked!
  */
@@ -178,7 +194,7 @@ int constDistro (int lowRange, int hiRange) {
  * int distro: type of distribution
  * 		0 : Constant
  * 		1 : Normal
- * 		2 : Logarithmic
+ * 		2 : Exponential
  * 		3 : TBD
  * 
  * return: the number of packages arriving this cycle
@@ -186,16 +202,15 @@ int constDistro (int lowRange, int hiRange) {
 double randNum (int cycle, int allCycles, int distro) {
 	double numPackages = 0;
 	
-	if (distro == 1){
+	if (distro == GAUSSIAN_DISTRO){
 		numPackages += constDistro(5, 0);
 		numPackages += gaussDistro(cycle, allCycles*0.15, allCycles*0.5);
 		return numPackages;
-	} else if (distro == 2){
+	} else if (distro == EXPO_DISTRO){
 		numPackages += constDistro(5,0);
 		numPackages += expoDistro (cycle, allCycles);
 		return numPackages;
-	} else {
-		// distro == 0
+	} else { // constant distro
 		numPackages += constDistro (0, 20);
 		return numPackages;
 	}
@@ -237,7 +252,7 @@ int main(int argc, char **argv)
 			// Global use
 	int packageCounter = 0;
 	int cycle = 0;
-	int allCycles = 100;
+	int allCycles = 100; // number of time packages will appear, defines median and std dev
 	int distribution = 1;
 	package_t allPackages [50];
 	int pRadioactive = 20;    //percentage of Radioactive packages
@@ -254,7 +269,7 @@ int main(int argc, char **argv)
 	
 	printf("package count is at %d \n", packageCounter);
 	
-	for (int i = 0;  i<7; i++){ checkPackage(i, &allPackages[i]); }	//DEBUG
+	for (int i = 0;  i<newPackages; i++){ checkPackage(i, &allPackages[i]); }	//DEBUG
 	
 	return 0;
 }
