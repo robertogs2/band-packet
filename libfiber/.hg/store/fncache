@@ -1,0 +1,10 @@
+data/Makefile.i
+data/basic-clone.c.i
+data/basic-sjlj.c.i
+data/basic-uc.c.i
+data/example.c.i
+data/libfiber-clone.c.i
+data/libfiber-sjlj.c.i
+data/libfiber-uc.c.i
+data/libfiber.h.i
+data/libfiber-asm.c.i
