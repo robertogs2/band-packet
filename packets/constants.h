@@ -17,7 +17,7 @@ const int RANDOM_BAND = 2;
 
 const int CONST_DISTRO = 0;
 const int GAUSSIAN_DISTRO = 1;
-const int EXPO_DISTRO = 2;
+const int GAMMA_DISTRO = 2;
 
 
 #endif

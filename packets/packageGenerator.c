@@ -1,6 +1,5 @@
 #include <stdio.h> 
 #include <stdlib.h> 
-#include <gsl/gsl_math.h>
 #include <math.h>
 #include <time.h> 
 #include "constants.h"
@@ -8,9 +7,9 @@
 typedef struct package {
 		int id;
 		float weight;
-		short side;		// 0: a, 1: b
-		short priority; // 0: norm, 1: urge, 2: rads
-		short status;	// 0: not ready, 1: ready to send, 2: in transit, 3: delivered
+		short side;
+		short priority;
+		short progress;
 		short band;		
 	} package_t;
 
@@ -83,7 +82,7 @@ short assignBand (int pSignBand, int pRandomBand){
   */
 int packageType (int pRads, int pPrime) {
 	
-	int packageType = roll100()+1;
+	int packageType = roll100();
 	
 	if (packageType < pRads) {
 		return RADIOACTIVE;
@@ -137,7 +136,7 @@ void createPackage(int* packageCounter, package_t* newPackage, int pRads, int pU
 		newPackage->weight = pWeight;
 		newPackage->side = pSide;
 		newPackage->priority = pPriority;	
-		newPackage->status = 1;
+		newPackage->progress = 1;
 		newPackage->band = pBand;
 		*packageCounter  = *packageCounter + 1;
 			
@@ -151,32 +150,79 @@ void checkPackage(int i, package_t* testPackage){
 	printf("  Package weight: %.2f \n", testPackage->weight);
 	printf("  Package side: %d \n", testPackage->side);
 	printf("  Package piority: %d \n", testPackage->priority);
-	printf("  Package status: %d \n", testPackage->status);
+	printf("  Package progress: %d \n", testPackage->progress);
 	printf("  Package in band: %d \n", testPackage->band);
 }
 
 
 // =============================================== PROBABILITY DISTRIBUTIONS ===============================================
 
-/** Calculate the probability distribution function (pdf) based on which cycle
- * the program is running. This generates packages following the 
- * probability distribution. *** Might be not what the teacher asked!
- */
-double gaussDistro(int cycle, double stdDev, double mean) {
-	int x = cycle;
-	const double pi = M_PI;
-	double var = stdDev*stdDev;
-
-	double nD = (1/sqrt(2*pi*var))*exp(-(x*x-2*x*mean+mean*mean)/(2*var))*mean*4;
-	return nD;
+// Creates a random number within the standard deviation of the function
+int randomStdDev(int stdDev){
+	int lowRange = -1*stdDev;
+	int hiRange = stdDev;
+	int meanModifier = (rand() % (hiRange - lowRange + 1)) + lowRange;
+	return meanModifier;
 }
 
-double expoDistro (int cycle, int allCycles){
-	int x = cycle;
-	const double lambda = 0.01;
-	
-	double eD = lambda * exp(-lambda*x) * 20*allCycles;
-	return eD;
+/** Create a semi-random number that follows the Gaussian distribution
+ * 
+ * int mean: mean of the distribution (68% of numbers will be within stdDev of mean)
+ * int stdDev: standard deviation of the function
+ * 
+ * returns integer number between 0 and mean*4*stdDev
+ */
+int gaussDistro(int mean, int stdDev) {
+	int percentile = roll100();
+	int pkgQuantity = 0;
+	if (mean<stdDev*4){
+		printf ("Warning: stdDev as been reduced to avoid negative packages \n");
+		stdDev = mean/4;
+	}
+	int modifier = randomStdDev(stdDev);
+	if (percentile<68) {
+		pkgQuantity = mean + modifier; 
+		return pkgQuantity;
+	} else if (percentile<95){
+		pkgQuantity = mean + 2*modifier;
+		return pkgQuantity;
+	} else if (percentile<99){
+		pkgQuantity = mean + 3*modifier;
+		return pkgQuantity;
+	} else {
+		pkgQuantity = mean + 4*modifier;
+		return pkgQuantity;
+	}
+}
+
+/** Create a semi-random number that follows the Gamma distribution
+ * 
+ * int mean: mean of the distribution (60% of numbers will be under the mean)
+ * int stdDev: standard deviation of the function
+ * 
+ * returns integer number between 0 and mean*4*stdDev
+ */
+int gammaDistro (int mean, int stdDev){
+	int percentile = roll100();
+	int pkgQuantity = 0;
+	if (mean<stdDev*4){
+		printf ("Warning: stdDev as been reduced to avoid negative packages \n");
+		stdDev = mean/4;
+	}
+	int modifier = randomStdDev(stdDev);
+	if (percentile<60) {
+		pkgQuantity = mean - stdDev + modifier; 
+		return pkgQuantity;
+	} else if (percentile<80){
+		pkgQuantity = mean + modifier;
+		return pkgQuantity;
+	} else if (percentile<95){
+		pkgQuantity = mean + stdDev + modifier;
+		return pkgQuantity;
+	} else {
+		pkgQuantity = mean + 2*stdDev + 2*modifier;
+		return pkgQuantity;
+	}
 }
 	
 int constDistro (int lowRange, int hiRange) {
@@ -186,66 +232,33 @@ int constDistro (int lowRange, int hiRange) {
 
 // =============================================== PROBABILITY DISTRIBUTIONS ===============================================
 
-/**Creates a random number of packages, based on the proababilty distri_
- * bution selected
+/**Creates a random number of packages, based on the proababilty distribution selected
  * 
- * int lowRange: Minimum number of packages that can appear  
- * int hiRange: Maximum number of packages that can appear 
+ * int mean: The mean that the distribution will have
+ * int stdDev: max 1/4 of the mean, modifies the number of packages created
  * int distro: type of distribution
  * 		0 : Constant
- * 		1 : Normal
- * 		2 : Exponential
+ * 		1 : Gaussian
+ * 		2 : Gamma
  * 		3 : TBD
  * 
  * return: the number of packages arriving this cycle
  */
-double randNum (int cycle, int allCycles, int distro) {
-	double numPackages = 0;
+int randNum (int mean, int stdDev, int distro) {
+	int numPackages = 0;
 	
 	if (distro == GAUSSIAN_DISTRO){
-		numPackages += constDistro(5, 0);
-		numPackages += gaussDistro(cycle, allCycles*0.15, allCycles*0.5);
+		numPackages += gaussDistro(mean, stdDev);
 		return numPackages;
-	} else if (distro == EXPO_DISTRO){
-		numPackages += constDistro(5,0);
-		numPackages += expoDistro (cycle, allCycles);
+	} else if (distro == GAMMA_DISTRO){
+		numPackages += gammaDistro (mean, stdDev);
 		return numPackages;
 	} else { // constant distro
-		numPackages += constDistro (0, 20);
+		numPackages += constDistro (1, 20);
 		return numPackages;
 	}
 }
 
-/** Create a testable Octave file that graphics the cumulative probabi_
- * lity distribution.
- * 
- * int cycles: amount of numbers to be tested
- * int lowRange: Minimum number of packages that can appear  
- * int hiRange: Maximum number of packages that can appear 
- * int distro: type of distribution
- * 		0 : Constant
- * 		1 : Normal
- * 		2 : Exponential
- * 		3 : TBD
- * 
- * return: a copy-paste string
- */
-void testDistribution (int allCycles, int distro){
-	int newPackages = 0;
-	int cycle = 0;
-	
-	printf ("x = 0:1:%d; \n", allCycles);
-	printf("y = [0, ");
-	for (cycle=allCycles; cycle>1; --cycle) {
-		newPackages = randNum(cycle, allCycles, distro); // += for accum
-		printf ("%d, ", newPackages);
-	}
-	newPackages = randNum(cycle, allCycles, distro); // += for accum
-	printf("%d]; \n", newPackages);
-	
-	printf("plot(x,y) \n");
-
-}
 
 int main(int argc, char **argv)
 {
@@ -261,7 +274,7 @@ int main(int argc, char **argv)
 	srand(time(0));
 	//testDistribution(1000, 2);
 
-	int newPackages = randNum(cycle, allCycles, distribution);
+	int newPackages = randNum(8, 2, 1);
 	for (int i=newPackages; i>0; --i){
 		createPackage(&packageCounter, &allPackages[packageCounter], pRadioactive, pUrgente);
 		cycle++;
