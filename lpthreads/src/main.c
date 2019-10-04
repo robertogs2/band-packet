@@ -1,67 +1,59 @@
-#include <malloc.h>
-#include <ucontext.h>
+#include "libfiber.h"
 #include <stdio.h>
-#include <stdlib.h>
-// 64kB stack
-#define FIBER_STACK 1024*64
-ucontext_t child, parent;
 
+#include <unistd.h>
 
-void threadFunction(void* arg){
-	while(1){
-		printf( "Child fiber yielding to parent %d\n", *(int*) arg);
-		swapcontext( &child, &parent );
-		printf( "Child thread exiting %d\n", *(int*) arg);
-		swapcontext( &child, &parent );
+void fiber1()
+{
+	int i;
+	for ( i = 0; i < 5000; ++ i ){
+		printf( "Hey, I'm fiber #1: %d\n", i );
+		fiberYield();
 	}
+	return;
+}
+
+void fibonacchi()
+{
+	int i;
+	int fib[2] = { 0, 1 };
 	
+	/*sleep( 2 ); */
+	printf( "fibonacchi(0) = 0\nfibonnachi(1) = 1\n" );
+	for( i = 2; i < 1500; ++ i ){
+		int nextFib = fib[0] + fib[1];
+		printf( "fibonacchi(%d) = %d\n", i, nextFib );
+		fib[0] = fib[1];
+		fib[1] = nextFib;
+		fiberYield();
+	}
 }
 
-int Lthread_create(void (*func)(void), void* arg){
-
-
-    // Get the current execution context
-    getcontext( &child );
-
-    // Modify the context to a new stack
-    child.uc_link = 0;
-    child.uc_stack.ss_sp = malloc( FIBER_STACK );
-    child.uc_stack.ss_size = FIBER_STACK;
-    child.uc_stack.ss_flags = 0;        
-    if ( child.uc_stack.ss_sp == 0 ){
-        perror( "malloc: Could not allocate stack" );
-        exit( 1 );
-    }
-
-    // Create the new context
-    printf( "Creating child fiber\n" );
-    makecontext( &child, func, 1, arg);
-
-    // Execute the child context
-    printf( "Switching to child fiber\n" );
-    swapcontext( &parent, &child );
-    printf( "Switching to child fiber again\n" );
-    swapcontext( &parent, &child );
-
-    // Free the stack
-    free( child.uc_stack.ss_sp );
-
-    printf( "Child fiber returned and stack freed\n" );
-
-    return 0;
-
+void squares()
+{
+	int i;
+	
+	/*sleep( 5 ); */
+	for ( i = 0; i < 100000; ++ i )
+	{
+		printf( "%d*%d = %d\n", i, i, i*i );
+		fiberYield();
+	}
 }
 
+int main()
+{
+	/* Initialize the fiber library */
+	initFibers();
+	
+	/* Go fibers! */
+	spawnFiber( &fiber1 );
+	spawnFiber( &fibonacchi );
+	spawnFiber( &squares );
 
-
-
-int main(){
-	int a = 4;
-	void* ap = &a;
-	Lthread_create((void (*)(void)) &threadFunction, ap);
-
-	int b = 5;
-	void* bp = &b;
-	Lthread_create((void (*)(void)) &threadFunction, bp);
+	/* Since these are nonpre-emptive, we must allow them to run */
+	waitForAllFibers();
+	
+	/* The program quits */
 	return 0;
 }
