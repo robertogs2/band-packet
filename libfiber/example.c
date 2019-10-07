@@ -6,9 +6,9 @@
 void fiber1()
 {
 	int i;
-	for ( i = 0; i < 10000; ++i )
+	for ( i = 0; i < 100; ++i )
 	{
-		//printf( "Hey, I'm fiber #1: %d\n", i );
+		printf( "Hey, I'm fiber #1: %d\n", i );
 		//fiberYield();
 	}
 	return;
@@ -21,10 +21,10 @@ void fibonacchi()
 	
 	/*sleep( 2 ); */
 	//printf( "fibonacchi(0) = 0\nfibonnachi(1) = 1\n" );
-	for( i = 2; i < 10000; ++ i )
+	for( i = 2; i < 100; ++ i )
 	{
 		int nextFib = fib[0] + fib[1];
-		//printf( "fibonacchi(%d) = %d\n", i, nextFib );
+		printf( "fibonacchi(%d) = %d\n", i, nextFib );
 		fib[0] = fib[1];
 		fib[1] = nextFib;
 		//fiberYield();
