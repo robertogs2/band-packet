@@ -10,7 +10,19 @@
 #include <unistd.h> /* For getpid */
 #include <time.h>
 
-#include "lpthread.h"
+/* The maximum number of fibers that can be active at once. */
+#define MAX_FIBERS 10
+/* The size of the stack for each fiber. */
+#define FIBER_STACK (1024*1024)
+
+#define	LF_NOERROR	0
+#define	LF_MAXFIBERS	1
+#define LF_MALLOCERROR	2
+#define LF_CLONEERROR	3
+#define	LF_INFIBER	4
+#define LF_SIGNALERROR	5
+
+//#include "lpthread.h"
 /* The LPthread Structure
 *  Contains the information about individual lpthreads.
 */

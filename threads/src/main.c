@@ -1,4 +1,4 @@
-#include "libfiber.h"
+#include "lpthread.h"
 #include <stdio.h>
 
 #include <unistd.h>
@@ -39,22 +39,22 @@ void squares()
     for ( i = 0; i < 10000; ++ i )
     {
         printf( "%d*%d = %d\n", i, i, i*i );
-        fiberYield();
+        //fiberYield();
     }
 }
 
 int main()
 {
     /* Initialize the fiber library */
-    initFibers();
+    initLPthreads();
     
     /* Go fibers! */
-    spawnFiber( &fiber1 );
-    spawnFiber( &fibonacchi );
+    Lthread_create( &fiber1, NULL);
+    Lthread_create( &fibonacchi , NULL);
     //spawnFiber( &squares );
 
     /* Since these are nonpre-emptive, we must allow them to run */
-    waitForAllFibers();
+    waitForAllLPthreads();
     
     /* The program quits */
     return 0;
