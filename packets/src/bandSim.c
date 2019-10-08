@@ -2,14 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "constants.h"
-
-// test Pkg
-typedef struct package {
-	int id;
-	int progress;
-	int weight;
-} package_t;
+#include "../include/constants.h"
 
 /** Calculate how long will the package will be on the band
  * 
@@ -40,7 +33,7 @@ void testTOB () {
 	for (int i = 0; i<35; i+=10){
 		normal1.weight += i;
 		double t1 = timeOnBand (normal1.weight, wBand_len, wBand_str);
-		printf ("With weigth %d the package will take %f seconds on the band \n", normal1.weight, t1);
+		printf ("With weigth %f the package will take %f seconds on the band \n", normal1.weight, t1);
 	}
 	
 	for (int j = 0; j<35; j+=10){
