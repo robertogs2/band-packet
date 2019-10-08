@@ -2,16 +2,7 @@
 #include <stdlib.h> 
 #include <math.h>
 #include <time.h> 
-#include "constants.h"
-
-typedef struct package {
-		int id;
-		float weight;
-		short side;
-		short priority;
-		short progress;
-		short band;		
-	} package_t;
+#include "../include/constants.h"
 
 /** Generate a random 0-100 number
  */
@@ -22,7 +13,6 @@ int roll100(){
 	int percentRoll = (rand() % (hiRange - lowRange + 1)) + lowRange;
 	return percentRoll;
 }
-
 
 // =============================================== DEFINE PACKAGE ATRIBUTES ===============================================
 
@@ -68,7 +58,6 @@ short assignBand (int pSignBand, int pRandomBand){
 		return W_BAND;
 	}
 }
-
 
 /** Returns the type of package base on a percentile roll
   * 
@@ -117,46 +106,6 @@ void testPackageType () {
 	
 	printf ("received: %d normal packages, %d priority packages and %d radioactive packages \n", norm, prio, rads);
 }
-
-/** Create a package 
- * 
- * packageCounter: auto-incremented package id
- * newPackage: pointer to the package we are instantiating
- * pRads: probability % that the package is radioactive, read from .config
- * pUrge: probability % that the package is urgent, read from .config
- * pLeft: probability % that the package starts on "the left side"
- * pSignBand: probabiliy % that the package will be assigned to the sign controlled band
- * pRandomBand: probability % that the package will be assigned to the randomly controlled band
- */
-void createPackage(int* packageCounter, package_t* newPackage, int pRads, int pUrge, int pLeft, int pSignBand, int pRandomBand){
-
-		int pPriority = packageType(pRads,pUrge);
-		float pWeight = measureWeight(pPriority);
-		short pSide = chooseSide(pLeft);
-		short pBand = assignBand(pSignBand, pRandomBand);
-					
-		newPackage->id = *packageCounter;
-		newPackage->weight = pWeight;
-		newPackage->side = pSide;
-		newPackage->priority = pPriority;	
-		newPackage->progress = 1;
-		newPackage->band = pBand;
-		*packageCounter  = *packageCounter + 1;
-			
-		printf ("Created package %d \n", newPackage->id);
-}
-
-// Test function
-void checkPackage(int i, package_t* testPackage){
-	printf("Checking package %d \n", i);
-	printf("  Package id: %d \n", testPackage->id);
-	printf("  Package weight: %.2f \n", testPackage->weight);
-	printf("  Package side: %d \n", testPackage->side);
-	printf("  Package piority: %d \n", testPackage->priority);
-	printf("  Package progress: %d \n", testPackage->progress);
-	printf("  Package in band: %d \n", testPackage->band);
-}
-
 
 // =============================================== PROBABILITY DISTRIBUTIONS ===============================================
 
@@ -233,7 +182,7 @@ int constDistro (int lowRange, int hiRange) {
 	return cD;
 }
 
-// =============================================== PROBABILITY DISTRIBUTIONS ===============================================
+// =============================================== GENERAL PACKAGE CREATION ===============================================
 
 /**Creates a random number of packages, based on the proababilty distribution selected
  * 
@@ -263,6 +212,46 @@ int randNum (int mean, int stdDev, int distro) {
 }
 
 
+/** Create a package 
+ * 
+ * packageCounter: auto-incremented package id
+ * newPackage: pointer to the package we are instantiating
+ * pRads: probability % that the package is radioactive, read from .config
+ * pUrge: probability % that the package is urgent, read from .config
+ * pLeft: probability % that the package starts on "the left side"
+ * pSignBand: probabiliy % that the package will be assigned to the sign controlled band
+ * pRandomBand: probability % that the package will be assigned to the randomly controlled band
+ */
+void createPackage(int* packageCounter, package_t* newPackage, int pRads, int pUrge, int pLeft, int pSignBand, int pRandomBand){
+
+		int pPriority = packageType(pRads,pUrge);
+		float pWeight = measureWeight(pPriority);
+		short pSide = chooseSide(pLeft);
+		short pBand = assignBand(pSignBand, pRandomBand);
+					
+		newPackage->id = *packageCounter;
+		newPackage->weight = pWeight;
+		newPackage->side = pSide;
+		newPackage->priority = pPriority;	
+		newPackage->progress = 1;
+		newPackage->band = pBand;
+		*packageCounter  = *packageCounter + 1;
+			
+		printf ("Created package %d \n", newPackage->id);
+}
+
+// Test function
+void checkPackage(int i, package_t* testPackage){
+	printf("Checking package %d \n", i);
+	printf("  Package id: %d \n", testPackage->id);
+	printf("  Package weight: %.2f \n", testPackage->weight);
+	printf("  Package side: %d \n", testPackage->side);
+	printf("  Package piority: %d \n", testPackage->priority);
+	printf("  Package progress: %d \n", testPackage->progress);
+	printf("  Package in band: %d \n", testPackage->band);
+}
+
+
 int main(int argc, char **argv)
 {
 			// Global use
@@ -279,7 +268,7 @@ int main(int argc, char **argv)
 	srand(time(0));
 
 		// Program example
-	int newPackages = randNum(20, 5, 1);
+	int newPackages = randNum(10, 5, 1);
 	for (int i=newPackages; i>0; --i){
 		createPackage(&packageCounter, &allPackages[packageCounter], pRadioactive, pUrgente, pLeft, pSignBand, pRandBand);
 	}
