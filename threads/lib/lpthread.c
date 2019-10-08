@@ -1,38 +1,9 @@
 #define _GNU_SOURCE
-#include <sched.h> /* For clone */
 
-#include <stdio.h>
-
-#include <signal.h> /* For SIGCHLD */
-#include <stdlib.h>
-#include <sys/types.h> /* For pid_t */
-#include <sys/wait.h> /* For wait */
-#include <unistd.h> /* For getpid */
-#include <time.h>
-
-/* The maximum number of fibers that can be active at once. */
-#define MAX_FIBERS 10
-/* The size of the stack for each fiber. */
-#define FIBER_STACK (1024*1024)
-
-#define	LF_NOERROR	0
-#define	LF_MAXFIBERS	1
-#define LF_MALLOCERROR	2
-#define LF_CLONEERROR	3
-#define	LF_INFIBER	4
-#define LF_SIGNALERROR	5
-
-//#include "lpthread.h"
-/* The LPthread Structure
-*  Contains the information about individual lpthreads.
-*/
-typedef struct{
-	pid_t pid; /* The pid of the child thread as returned by clone */
-	void* stack; /* The stack pointer */
-} lpthread;
+#include "lpthread.h"
 
 /* The lpthread "queue" */
-static lpthread lpthreadList[MAX_FIBERS];
+static lpthread_t lpthreadList[MAX_FIBERS];
 /* The pid of the parent process */
 static pid_t parentPid;
 /* The number of active lpthreads */
@@ -41,7 +12,7 @@ static int numLPthreads = 0;
 /* Initialize the lpthreads to null */
 void initLPthreads(){
 	int i;
-	for ( i = 0; i < MAX_FIBERS; ++ i ){
+	for (i = 0; i < MAX_FIBERS; ++ i){
 		lpthreadList[i].pid = 0;
 		lpthreadList[i].stack = 0;
 	}
@@ -59,8 +30,9 @@ int map_pid_index(pid_t id){
 
 /* Call the sched_yield system call which moves the current process to the
 end of the process queue. */
-void Lthread_yield(){
+int Lthread_yield(){
 	sched_yield();
+	return 0;
 }
 
 /* Standard C99 does not permit void* to point to functions. This exists to
@@ -84,21 +56,21 @@ static int lpthreadStart( void* fun ){
 }
 
 int Lthread_create( void (*func)(void), void* arg){
-	struct LPthreadArguments* arguments = NULL;
-	if ( numLPthreads == MAX_FIBERS ) return LF_MAXFIBERS;
+	struct LPthreadArguments *arguments=NULL;
+	if(numLPthreads==MAX_FIBERS) return LF_MAXFIBERS;
 
-	/* Allocate the stack */
-	lpthreadList[numLPthreads].stack = malloc( FIBER_STACK );
-	if ( lpthreadList[numLPthreads].stack == 0 ){
-		printf( "Error: Could not allocate stack." );
+	/*Allocate the stack*/
+	lpthreadList[numLPthreads].stack=malloc(FIBER_STACK);
+	if(lpthreadList[numLPthreads].stack==0){
+		printf("Error: Could not allocate stack.");
 		return LF_MALLOCERROR;
 	}
 
 	/* Create the arguments structure. */
-	arguments = (struct LPthreadArguments*) malloc( sizeof(*arguments) );
-	if ( arguments == 0 ) {
-		free( lpthreadList[numLPthreads].stack );
-		printf( "Error: Could not allocate lpthread arguments." );
+	arguments=(struct LPthreadArguments*) malloc(sizeof(*arguments));
+	if(arguments==0){
+		free(lpthreadList[numLPthreads].stack);
+		printf("Error: Could not allocate lpthread arguments.");
 		return LF_MALLOCERROR;
 	}
 	arguments->function = func;
@@ -108,16 +80,20 @@ int Lthread_create( void (*func)(void), void* arg){
 	lpthreadList[numLPthreads].pid = clone( &lpthreadStart, (char*) lpthreadList[numLPthreads].stack + FIBER_STACK,
 		SIGCHLD | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_VM, arguments );
 	printf("Started thread with pid/tid %d\n", lpthreadList[numLPthreads].pid);
-	if ( lpthreadList[numLPthreads].pid == -1 ){
-		free( lpthreadList[numLPthreads].stack );
-		free( arguments );
-		printf( "Error: clone system call failed." );
+	if(lpthreadList[numLPthreads].pid==-1){
+		free(lpthreadList[numLPthreads].stack);
+		free(arguments);
+		printf("Error: clone system call failed.");
 		return LF_CLONEERROR;
 	}
 	
 	numLPthreads ++;
 	
 	return LF_NOERROR;
+}
+
+int Lthread_join(){
+	return 0;
 }
 
 int waitForAllLPthreads(){

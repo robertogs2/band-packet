@@ -2,10 +2,11 @@ LIBNAME=lpthread
 SRC=$(LIBNAME).c
 OBJ=$(LIBNAME).o
 
+INCDIR=../include
 LIBSTATIC=lib$(LIBNAME).a
 
 CC=gcc
-CFLAGS=-c -Wall
+CFLAGS=-c -Wall -I $(INCDIR) 
 SL=ar rvs
 DL=ld
 
