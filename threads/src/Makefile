@@ -10,7 +10,7 @@ LIBDIR=../lib
 INCDIR=../include
 
 CC=gcc
-CFLAGS=-c -Wall -I $(INCDIR) 
+CFLAGS=-c -Wall -I $(INCDIR) -g
 LFLAGS= -L $(LIBDIR) -Wall
 
 SLIBS = -l:lib$(LIBNAME).a -lm

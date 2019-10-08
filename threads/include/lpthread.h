@@ -28,15 +28,22 @@
 typedef struct{
 	pid_t pid; /* The pid of the child thread as returned by clone */
 	void* stack; /* The stack pointer */
+	char detached;
 } lpthread_t;
 
 
+typedef struct{
+	int id;
+} lpthread_attr_t;
+
 // Public functions for use
-int Lthread_create(void (*func)(void), void* arg);
+int Lthread_create(lpthread_t* thread, const lpthread_attr_t* attr,
+					int (*start_routine)(void*), void* arg);			// Missing usage of attr
 int Lthread_end();
 int Lthread_yield();
-int Lthread_join();
-int Lthread_detach();
+int Lthread_join(lpthread_t* thread, void **retval); 					// Missing usage of retval
+int Lthread_detach(lpthread_t thread);
+
 int Lmutex_init();
 int Lmutex_destroy();
 int Lmutex_unlock();

@@ -6,7 +6,7 @@ INCDIR=../include
 LIBSTATIC=lib$(LIBNAME).a
 
 CC=gcc
-CFLAGS=-c -Wall -I $(INCDIR) 
+CFLAGS=-c -Wall -I $(INCDIR) -g
 SL=ar rvs
 DL=ld
 
