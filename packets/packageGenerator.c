@@ -120,17 +120,20 @@ void testPackageType () {
 
 /** Create a package 
  * 
- * packageCounter: auto-incremented package id/position on the array
- * newPackage: pointer to the package in the array we are defining
- * pRads: probability that the package is radioactive, read from .config
- * pUrge: probability that the package is urgent, read from .config
+ * packageCounter: auto-incremented package id
+ * newPackage: pointer to the package we are instantiating
+ * pRads: probability % that the package is radioactive, read from .config
+ * pUrge: probability % that the package is urgent, read from .config
+ * pLeft: probability % that the package starts on "the left side"
+ * pSignBand: probabiliy % that the package will be assigned to the sign controlled band
+ * pRandomBand: probability % that the package will be assigned to the randomly controlled band
  */
-void createPackage(int* packageCounter, package_t* newPackage, int pRads, int pUrge){
+void createPackage(int* packageCounter, package_t* newPackage, int pRads, int pUrge, int pLeft, int pSignBand, int pRandomBand){
 
 		int pPriority = packageType(pRads,pUrge);
 		float pWeight = measureWeight(pPriority);
-		short pSide = chooseSide(80);				// define probability of side somewhere else
-		short pBand = assignBand(40, 30);			// define probability of band somewhere else
+		short pSide = chooseSide(pLeft);
+		short pBand = assignBand(pSignBand, pRandomBand);
 					
 		newPackage->id = *packageCounter;
 		newPackage->weight = pWeight;
@@ -237,7 +240,7 @@ int constDistro (int lowRange, int hiRange) {
  * int mean: The mean that the distribution will have
  * int stdDev: max 1/4 of the mean, modifies the number of packages created
  * int distro: type of distribution
- * 		0 : Constant
+ * 		0 : Constant (ignores mean and stdDev, creates between 1 and 20)
  * 		1 : Gaussian
  * 		2 : Gamma
  * 		3 : TBD
@@ -264,20 +267,21 @@ int main(int argc, char **argv)
 {
 			// Global use
 	int packageCounter = 0;
-	int cycle = 0;
-	int allCycles = 100; // number of time packages will appear, defines median and std dev
-	int distribution = 1;
 	package_t allPackages [50];
+
+        // Create package
 	int pRadioactive = 20;    //percentage of Radioactive packages
 	int pUrgente = 20;		//percentage of Priority packages
+    int pLeft = 95;
+    int pSignBand = 40;
+    int pRandBand = 20;
 	
 	srand(time(0));
-	//testDistribution(1000, 2);
 
-	int newPackages = randNum(8, 2, 1);
+		// Program example
+	int newPackages = randNum(20, 5, 1);
 	for (int i=newPackages; i>0; --i){
-		createPackage(&packageCounter, &allPackages[packageCounter], pRadioactive, pUrgente);
-		cycle++;
+		createPackage(&packageCounter, &allPackages[packageCounter], pRadioactive, pUrgente, pLeft, pSignBand, pRandBand);
 	}
 	
 	printf("package count is at %d \n", packageCounter);
