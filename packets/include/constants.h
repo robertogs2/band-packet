@@ -1,5 +1,25 @@
-#ifndef constants.h
-#define constants.h 
+#ifndef CONSTANTS 
+#define CONSTANTS 
+
+typedef struct package {
+		int id;
+		float weight;
+		short side;
+		short priority;
+		short progress;
+		short band;		
+	} package_t;
+
+typedef struct config {
+    int bandID;
+    int bandStrength;
+    int bandLength;
+    int packageDistro;
+    int packageRadsP;
+    int packagePrioP;
+    int packageLeftP;
+    int bandParameter;
+} config_t;
 
 const int HUNDRED_PERCENT = 100;
 const int ZERO = 0;
@@ -18,6 +38,5 @@ const int RANDOM_BAND = 2;
 const int CONST_DISTRO = 0;
 const int GAUSSIAN_DISTRO = 1;
 const int GAMMA_DISTRO = 2;
-
 
 #endif
