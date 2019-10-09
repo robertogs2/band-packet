@@ -6,6 +6,7 @@
 #define SCHEDULERS_SCHEDULERS_H
 
 #include "linked_list.h"
+#include <time.h>
 
 enum scheduler_type{
   ROUND_ROBIN,
@@ -20,7 +21,7 @@ enum scheduler_type{
  * @param pack package to evaluate
  * @return true if time is over, else false.
  */
-bool get_used_time(package_t* pack);
+double get_used_time(package_t* pack);
 
 /**
  * Sets time when a package begins to being used by Round Robin scheduler
@@ -38,7 +39,7 @@ void schedule_priority(Node_t* list_packages);
  * Schedule a list of packages using Round Robin policy
  * @param list_packages
  */
-void schedule_round_robin(Node_t* list_packages, double quantum);
+void schedule_round_robin(Node_t** list_packages, double quantum);
 
 /**
  * Schedule a list of packages using shortest first policy

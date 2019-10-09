@@ -19,7 +19,7 @@ typedef struct package {
   bool on_band;
   short execution_time;
   short remaining_time;
-  short usage_time_start;
+  clock_t usage_time_start;
 } package_t;
 
 
