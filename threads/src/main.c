@@ -63,9 +63,11 @@ int main(){
     Lthread_create(&thread3, NULL, &squares , NULL);
     
     //spawnFiber( &squares );
-    Lthread_join(thread, NULL);
+    //Lthread_exit(thread3);
+    Lthread_detach(thread2);
     Lthread_join(thread2, NULL);
     Lthread_join(thread3, NULL);
+
 
     /* Since these are nonpre-emptive, we must allow them to run */
     //waitForAllLPthreads();
