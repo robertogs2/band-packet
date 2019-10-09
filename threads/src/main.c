@@ -1,20 +1,22 @@
+#define _GNU_SOURCE
 #include "lpthread.h"
 #include <stdio.h>
 
 #include <unistd.h>
 
-void fiber1()
-{
+int fiber1(void* arg){
+    printf("%s\n", "enter");
+    int a = *((int*)arg);
     int i;
-    for ( i = 0; i < 100; ++i )
-    {
-        printf( "Hey, I'm fiber #1: %d\n", i );
+    for ( i = 0; i < 100; ++i ){
+        printf( "Hey, I'm fiber #1: %d asdasd %d\n", i ,a);
         //fiberYield();
     }
-    return;
+    printf("%s\n", "end");
+    return 0;
 }
 
-void fibonacchi()
+int fibonacchi()
 {
     int i;
     int fib[2] = { 0, 1 };
@@ -29,32 +31,46 @@ void fibonacchi()
         fib[1] = nextFib;
         //fiberYield();
     }
+    return 0;
 }
 
-void squares()
-{
+int squares(){
     int i;
     
     /*sleep( 5 ); */
-    for ( i = 0; i < 10000; ++ i )
-    {
+    for ( i = 0; i < 100; ++ i ){
         printf( "%d*%d = %d\n", i, i, i*i );
         //fiberYield();
     }
+    return 0;
 }
 
-int main()
-{
-    /* Initialize the fiber library */
-    initLPthreads();
+int main(){
     
+    int a = 10;
+    void* ap = (void*)&a;
+    // lpthread_t* thread = (lpthread_t*)malloc(sizeof(lpthread_t));
+    // lpthread_t* thread2 = (lpthread_t*)malloc(sizeof(lpthread_t));
+    // lpthread_t* thread3 = (lpthread_t*)malloc(sizeof(lpthread_t));
+
+    lpthread_t thread;
+    lpthread_t thread2;
+    lpthread_t thread3;
+
     /* Go fibers! */
-    Lthread_create( &fiber1, NULL);
-    Lthread_create( &fibonacchi , NULL);
+    Lthread_create(&thread, NULL, &fiber1, ap);
+    Lthread_create(&thread2, NULL, &fibonacchi , NULL);
+    Lthread_create(&thread3, NULL, &squares , NULL);
+    
     //spawnFiber( &squares );
+    //Lthread_exit(thread3);
+    Lthread_detach(thread2);
+    Lthread_join(thread2, NULL);
+    Lthread_join(thread3, NULL);
+
 
     /* Since these are nonpre-emptive, we must allow them to run */
-    waitForAllLPthreads();
+    //waitForAllLPthreads();
     
     /* The program quits */
     return 0;
