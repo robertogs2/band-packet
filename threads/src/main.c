@@ -49,14 +49,18 @@ int main(){
     
     int a = 10;
     void* ap = (void*)&a;
-    lpthread_t* thread = (lpthread_t*)malloc(sizeof(lpthread_t));
-    lpthread_t* thread2 = (lpthread_t*)malloc(sizeof(lpthread_t));
-    lpthread_t* thread3 = (lpthread_t*)malloc(sizeof(lpthread_t));
+    // lpthread_t* thread = (lpthread_t*)malloc(sizeof(lpthread_t));
+    // lpthread_t* thread2 = (lpthread_t*)malloc(sizeof(lpthread_t));
+    // lpthread_t* thread3 = (lpthread_t*)malloc(sizeof(lpthread_t));
+
+    lpthread_t thread;
+    lpthread_t thread2;
+    lpthread_t thread3;
 
     /* Go fibers! */
-    Lthread_create(thread, NULL, &fiber1, ap);
-    Lthread_create(thread2, NULL, &fibonacchi , NULL);
-    Lthread_create(thread3, NULL, &squares , NULL);
+    Lthread_create(&thread, NULL, &fiber1, ap);
+    Lthread_create(&thread2, NULL, &fibonacchi , NULL);
+    Lthread_create(&thread3, NULL, &squares , NULL);
     
     //spawnFiber( &squares );
     Lthread_join(thread, NULL);

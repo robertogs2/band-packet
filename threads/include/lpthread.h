@@ -8,6 +8,7 @@
 #include <sys/wait.h> /* For wait */
 #include <unistd.h> /* For getpid */
 #include <time.h>
+#include <string.h>
 
 /* The maximum number of fibers that can be active at once. */
 #define MAX_FIBERS 10
@@ -41,7 +42,7 @@ int Lthread_create(lpthread_t* thread, const lpthread_attr_t* attr,
 					int (*start_routine)(void*), void* arg);			// Missing usage of attr
 int Lthread_end();
 int Lthread_yield();
-int Lthread_join(lpthread_t* thread, void **retval); 					// Missing usage of retval
+int Lthread_join(lpthread_t thread, void **retval); 					// Missing usage of retval
 int Lthread_detach(lpthread_t thread);
 
 int Lmutex_init();

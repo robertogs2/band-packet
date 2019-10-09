@@ -3,7 +3,7 @@
 #include "lpthread.h"
 
 /* The lpthread "queue" */
-static lpthread_t* lpthreadList[MAX_FIBERS];
+static lpthread_t lpthreadList[MAX_FIBERS];
 /* The pid of the parent process */
 static pid_t parentPid;
 /* The number of active lpthreads */
@@ -22,7 +22,7 @@ void initLPthreads(){
 
 int map_pid_index(pid_t id){
 	for(int i = 0; i < MAX_FIBERS; ++i){
-		if(lpthreadList[i]->pid == id){
+		if(lpthreadList[i].pid == id){
 			return i;
 		}
 	}
@@ -44,6 +44,7 @@ int Lthread_create(lpthread_t* thread, const lpthread_attr_t *attr,
 		started_=1;
 	}
 	
+
 	/*Allocate the stack*/
 	thread->stack=malloc(FIBER_STACK);
 	if(thread->stack==0){
@@ -61,31 +62,30 @@ int Lthread_create(lpthread_t* thread, const lpthread_attr_t *attr,
 		printf("Error: clone system call failed.");
 		return LF_CLONEERROR;
 	}
-	lpthreadList[numLPthreads] = thread;
-	numLPthreads++;
+	memcpy((void*)&lpthreadList[numLPthreads++], (void*)thread, sizeof(lpthread_t));
 	return LF_NOERROR;
 }
 
-int Lthread_join(lpthread_t* thread, void **retval){
+int Lthread_join(lpthread_t thread, void **retval){
 	//printf("%s%p\n", "joining",thread);
-	int id = thread->pid;
+	int id = thread.pid;
 	printf("Thread to join id%d\n", id);
 	// Stop the others threads
 
 	for(int i = 0; i < numLPthreads; ++i){
-		pid_t another_id = lpthreadList[i]->pid;
+		pid_t another_id = lpthreadList[i].pid;
 		if(another_id != id && another_id > 0){
 			printf("Stopping thread with id: %d\n", another_id);
 			kill(another_id, SIGSTOP);
 		}
 	}
 
-	printf("Joining: %d\n", thread->pid);
-	int res = waitpid(thread->pid, 0, 0);
+	printf("Joining: %d\n", thread.pid);
+	int res = waitpid(thread.pid, 0, 0);
 	printf("%s\n", "done");
 
 	for(int i = 0; i < numLPthreads; ++i){
-		pid_t another_id = lpthreadList[i]->pid;
+		pid_t another_id = lpthreadList[i].pid;
 		if(another_id != id && another_id > 0){
 			printf("Restarting thread with id: %d\n", another_id);
 			kill(another_id, SIGCONT);
@@ -97,7 +97,7 @@ int Lthread_join(lpthread_t* thread, void **retval){
 
 int Lthread_detach(lpthread_t thread){
 	int index = map_pid_index(thread.pid);
-	lpthreadList[index]->detached = 1;
+	lpthreadList[index].detached = 1;
 }
 
 int waitForAllLPthreads(){
@@ -120,11 +120,11 @@ int waitForAllLPthreads(){
 		
 		/* Find the lpthread, free the stack, and swap it with the last one */
 		for ( i = 0; i < numLPthreads; ++ i ){
-			if ( lpthreadList[i]->pid == pid ){
+			if ( lpthreadList[i].pid == pid ){
 				printf( "Child lpthread pid = %d exited\n", pid );
 				numLPthreads --;
 				
-				free( lpthreadList[i]->stack );
+				free( lpthreadList[i].stack );
 				if ( i != numLPthreads ){
 					lpthreadList[i] = lpthreadList[numLPthreads];
 				}
