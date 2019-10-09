@@ -18,6 +18,7 @@ typedef struct package {
   short band;
   bool on_band;
   short execution_time;
+  short remaining_time;
   short usage_time_start;
 } package_t;
 
