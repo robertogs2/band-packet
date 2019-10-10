@@ -3,11 +3,12 @@
 #include <math.h>
 #include <time.h> 
 #include "../include/constants.h"
+#include "../include/linked_list.h"
+#include "../include/packageGenerator.h"
 
 /** Generate a random 0-100 number
  */
 int roll100(){
-	const int HUNDRED_PERCENT = 100;
 	int lowRange = ZERO;	  
 	int hiRange = HUNDRED_PERCENT;
 	int percentRoll = (rand() % (hiRange - lowRange + 1)) + lowRange;
@@ -69,7 +70,7 @@ short assignBand (int pSignBand, int pRandomBand){
   * 		1 : priority
   *   		2 : radioactive
   */
-int packageType (int pRads, int pPrime) {
+short packageType (int pRads, int pPrime) {
 	
 	int packageType = roll100();
 	
@@ -105,6 +106,20 @@ void testPackageType () {
 	}
 	
 	printf ("received: %d normal packages, %d priority packages and %d radioactive packages \n", norm, prio, rads);
+}
+
+/** Calculate how long will the package will be on the band
+ * 
+ * int pkgWeight: the weight of the package being sent [kg]
+ * int bandLen: the length of the transport band [m]
+ * int bandStr: the strength of the transport band [N]
+ * 
+ * return t: the time the package will be on the band [s]
+ */
+short timeOnBand (int pkgWeight, int bandLen, int bandStr){
+	double mdf = pkgWeight*bandLen/bandStr;
+	short t = (short) 0.5*mdf;//* sqrt(mdf); problems linking math.h in the makefile
+	return t;
 }
 
 // =============================================== PROBABILITY DISTRIBUTIONS ===============================================
@@ -224,63 +239,40 @@ int randNum (int mean, int stdDev, int distro) {
  */
 void createPackage(int* packageCounter, package_t* newPackage, int pRads, int pUrge, int pLeft, int pSignBand, int pRandomBand){
 
-		int pPriority = packageType(pRads,pUrge);
-		float pWeight = measureWeight(pPriority);
-		short pSide = chooseSide(pLeft);
-		short pBand = assignBand(pSignBand, pRandomBand);
+		short pkgPriority = packageType(pRads,pUrge);
+		float pkgWeight = measureWeight(pkgPriority);
+		short pkgSide = chooseSide(pLeft);
+		short pkgBand = assignBand(pSignBand, pRandomBand);
+		short exeTime = timeOnBand(pkgWeight, 10, 100);//getBandLen(pkgBand), getBandStr(pkgBand));
 					
 		newPackage->id = *packageCounter;
-		newPackage->weight = pWeight;
-		newPackage->side = pSide;
-		newPackage->priority = pPriority;	
+		newPackage->weight = pkgWeight;
+		newPackage->side = pkgSide;
+		newPackage->priority = pkgPriority;	
 		newPackage->progress = 1;
-		newPackage->band = pBand;
+		newPackage->band = pkgBand;
+		newPackage->on_band = false;
+		newPackage->execution_time = exeTime;
+		newPackage->remaining_time = exeTime;
+		newPackage->usage_time_start = -1;
 		*packageCounter  = *packageCounter + 1;
 			
 		printf ("Created package %d \n", newPackage->id);
 }
 
-// Test function
-void checkPackage(int i, package_t* testPackage){
-	printf("Checking package %d \n", i);
-	printf("  Package id: %d \n", testPackage->id);
+/** Prints a package contents
+ * 
+ * package_t testPackage: the package to be printed out
+ */
+void checkPackage(package_t* testPackage){
+	printf("Checking package id: %d \n", testPackage->id);
 	printf("  Package weight: %.2f \n", testPackage->weight);
 	printf("  Package side: %d \n", testPackage->side);
 	printf("  Package piority: %d \n", testPackage->priority);
 	printf("  Package progress: %d \n", testPackage->progress);
 	printf("  Package in band: %d \n", testPackage->band);
+	printf("  Package execution time: %d \n", testPackage->execution_time);
+	printf("  Package has: %d s left on the band \n", testPackage->remaining_time);
+	printf("  Package started on: %d \n", testPackage->usage_time_start);
 }
-
-
-int main(int argc, char **argv)
-{
-			// Global use
-	int packageCounter = 0;
-	package_t allPackages [50];
-
-        // Create package
-	int pRadioactive = 20;    //percentage of Radioactive packages
-	int pUrgente = 20;		//percentage of Priority packages
-    int pLeft = 95;
-    int pSignBand = 40;
-    int pRandBand = 20;
-	
-	srand(time(0));
-
-		// Program example
-	int newPackages = randNum(10, 5, 1);
-	for (int i=newPackages; i>0; --i){
-		createPackage(&packageCounter, &allPackages[packageCounter], pRadioactive, pUrgente, pLeft, pSignBand, pRandBand);
-	}
-	
-	printf("package count is at %d \n", packageCounter);
-	
-	for (int i = 0;  i<newPackages; i++){ checkPackage(i, &allPackages[i]); }	//DEBUG
-	
-	return 0;
-}
-
-
-
-
 
