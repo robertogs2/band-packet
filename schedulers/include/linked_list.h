@@ -15,10 +15,13 @@ typedef struct package {
   short side;
   short priority;
   short progress;
+  double speed;
   short band;
   bool on_band;
-  short execution_time;
-  short remaining_time;
+  double accum_execution_time;
+  double current_execution_time;
+  double total_execution_time;
+  double remaining_time; //total_execution_time - current_execution_time
   clock_t usage_time_start;
 } package_t;
 

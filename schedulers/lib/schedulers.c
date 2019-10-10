@@ -2,7 +2,7 @@
 // Created by lionheart on 8/10/19.
 //
 
-#include "schedulers.h"
+#include "../include/schedulers.h"
 
 void schedule_priority(Node_t *list_packages) {
   quick_sort(list_packages, 0, get_length(list_packages)-1, PRIORITY);
@@ -18,7 +18,7 @@ void schedule_real_time(Node_t *list_packages, double limit_time) {
 
 
 int partition(Node_t *list_packages, int low, int high, enum scheduler_type type) {
-  short pivot;
+  double pivot;
   int  i = (low - 1); //index of smaller element
   int j;
 
@@ -35,9 +35,9 @@ int partition(Node_t *list_packages, int low, int high, enum scheduler_type type
       break;
     }
     case SHORTEST_FIRST:{
-      pivot = get_at(list_packages,high)->execution_time;
+      pivot = get_at(list_packages,high)->total_execution_time;
       for(j = low; j <= high ; ++j){
-        if(get_at(list_packages, j)->execution_time < pivot){
+        if(get_at(list_packages, j)->total_execution_time < pivot){
           i++;
           swap(list_packages, i, j);
         }
@@ -82,6 +82,8 @@ void schedule_round_robin(Node_t **list_packages, double quantum) {
   double cpu_time_used = get_used_time(get_at(*list_packages,0));
   //time is over go to next package
   if(cpu_time_used > quantum){
+    //save execution time
+    get_at(*list_packages,0)->accum_execution_time += cpu_time_used;
     //pop front and push back, circular rotation
     push_back(list_packages, pop_front(list_packages));
     //set start time of new package
