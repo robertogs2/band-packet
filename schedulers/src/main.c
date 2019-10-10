@@ -2,7 +2,7 @@
 #include "../include/schedulers.h"
 #include <pthread.h>
 #include <unistd.h>
-
+#include "../include/lpthread.h"
 
 const double QUANTUM = 5;
 Node_t * list_packages = NULL;
@@ -14,7 +14,7 @@ typedef struct ThreadParams{
   double limit_time;
 } params_t;
 
-void wait(double seconds){
+void wait_seconds(double seconds){
   clock_t start;
   start = clock();
   double elapsed_time = 0;
@@ -23,14 +23,14 @@ void wait(double seconds){
   }
 }
 
-void* process_packages(void* params_ptr){
+int process_packages(void* params_ptr){
   params_t *params = (params_t*)params_ptr;
   if(params->type == ROUND_ROBIN){
     //start algorithm
     set_usage_time_start(get_at(list_packages,0));
     while(get_length(list_packages) > 0){
       schedule_round_robin(&list_packages, params->quantum);
-      wait(0.5);
+      wait_seconds(0.5);
     }
   }
   return 0;
@@ -90,16 +90,16 @@ int main() {
   push_back(&list_packages, pop_front(&list_packages));
   print_list(list_packages);
 
-  pthread_t t_id_0;
+  lpthread_t t_id_0;
   params_t *params = malloc(sizeof(params_t));
   params->quantum = QUANTUM;
   params->type = ROUND_ROBIN;
 
 
-  if(pthread_create(&t_id_0, NULL, &process_packages, (void *) params) != 0)
+  if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params) != 0)
     printf("\nCould not created Thread 0\n");
 
-  pthread_join(t_id_0, NULL);
+  Lthread_join(t_id_0, NULL);
 
 
 //
