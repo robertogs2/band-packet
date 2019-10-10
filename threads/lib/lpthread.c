@@ -48,7 +48,7 @@ int Lthread_create(lpthread_t* thread, const lpthread_attr_t *attr,
 	thread->pid = clone( start_routine, (char*) (thread->stack + FIBER_STACK),
 		SIGCHLD | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_VM |CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, arg );
 
-	printf("Started thread with pid/tid %d\n", thread->pid);
+	//printf("Started thread with pid/tid %d\n", thread->pid);
 	if(thread->pid==-1){
 		free(thread->stack);
 		printf("Error: clone system call failed.");
@@ -75,7 +75,7 @@ int Lthread_join(lpthread_t thread, void **retval){
 	//printf("%s%p\n", "joining",thread);
 	int id = thread.pid;
 	int index = map_pid_index(thread.pid);
-	printf("Thread to join id%d\n", id);
+	//printf("Thread to join id%d\n", id);
 	// Stop the others threads
 
 	if(lpthreadList[index].detached==0){
@@ -87,7 +87,7 @@ int Lthread_join(lpthread_t thread, void **retval){
 			}
 		}
 
-		printf("Joining: %d\n", thread.pid);
+		//printf("Joining: %d\n", thread.pid);
 		waitpid(thread.pid, 0, 0);
 		printf("%s\n", "done");
 
