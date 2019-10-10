@@ -36,6 +36,7 @@ void update_progress(package_t* pack, enum scheduler_type type){
 
 
 int process_packages(void* params_ptr){
+
   params_t *params = (params_t*)params_ptr;
   if(params->type == ROUND_ROBIN){
     //start algorithm
@@ -61,6 +62,10 @@ int process_packages(void* params_ptr){
   //non appropriative
   else if(params->type == FIFO || params->type == PRIORITY || params->type == SHORTEST_FIRST){
     //start algorithm
+    if(params->type == PRIORITY) schedule_priority(list_packages);
+    else if(params->type == SHORTEST_FIRST) schedule_shortest_first(list_packages);
+    print_list(list_packages);
+
     set_usage_time_start(get_at(list_packages, 0));
     //while there are packages
     while(get_length(list_packages) > 0){
@@ -144,13 +149,13 @@ int main() {
   packages[4].remaining_time = packages[4].total_execution_time;
   packages[5].remaining_time = packages[5].total_execution_time;
 
-  printf("Schedule by Round Robin\n");
-  print_list(list_packages);
+  //printf("Schedule by Round Robin\n");
+
 
   lpthread_t t_id_0;
   params_t *params = malloc(sizeof(params_t));
   params->quantum = QUANTUM;
-  params->type = ROUND_ROBIN;
+  params->type = PRIORITY;
 
   if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params) != 0)
     printf("\nCould not created Thread 0\n");

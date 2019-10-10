@@ -5,7 +5,7 @@ schedulers/CMakeLists.txt
 schedulers/.idea/
 schedulers/.idea/.gitignore
 schedulers/bin/
-
+gui/.idea/
 
 # Created by https://www.gitignore.io/api/c
 # Edit at https://www.gitignore.io/?templates=c
