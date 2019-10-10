@@ -13,10 +13,10 @@ static char started_ = 0;
 
 /* Initialize the lpthreads to null */
 void initLPthreads(){
-	// for (int i = 0; i < MAX_FIBERS; ++ i){
-	// 	lpthreadList[i]->pid = 0;
-	// 	lpthreadList[i]->stack = 0;
-	// }
+	for (int i = 0; i < MAX_FIBERS; ++ i){
+		lpthreadList[i].pid = 0;
+		lpthreadList[i].stack = 0;
+	}
 	parentPid = getpid();
 }
 
@@ -154,3 +154,36 @@ int waitForAllLPthreads(){
 	return LF_NOERROR;
 }
 
+int Lmutex_init(lpthread_mutex_t* restrict mutex, const lpthread_mutexattr_t *restrict attr){
+	mutex->locked=0;
+	mutex->pid=0;
+	return 0;
+}
+int Lmutex_destroy(lpthread_mutex_t *mutex){
+	mutex->locked = 0;
+	mutex->pid = 0;
+	return 0;
+}
+int Lmutex_unlock(lpthread_mutex_t *mutex){
+	mutex->locked = 0;
+	mutex->pid = 0;
+	return 0;
+}
+int Lmutex_trylock(lpthread_mutex_t *mutex){
+	if(mutex->locked==0){
+		mutex->locked=1;
+		mutex->pid = getpid();
+		return 0;
+	}
+	return 1;
+}
+int Lmutex_lock(lpthread_mutex_t *mutex){
+	LOOP: while(mutex->locked); // Race condition !!!!!!!!! Wait for mutex to unlock
+	pid_t id = getpid();
+	mutex->locked= 1;
+	mutex->pid = id;
+	if(mutex->pid != id){ // Method one to eliminate race condition
+		goto LOOP;
+	}
+	return 0;
+}

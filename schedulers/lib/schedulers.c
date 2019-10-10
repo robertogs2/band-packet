@@ -2,7 +2,7 @@
 // Created by lionheart on 8/10/19.
 //
 
-#include "../include/schedulers.h"
+#include "schedulers.h"
 
 void schedule_priority(Node_t *list_packages) {
   quick_sort(list_packages, 0, get_length(list_packages)-1, PRIORITY);
