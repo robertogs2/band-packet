@@ -7,12 +7,13 @@
 #include "../include/linked_list.h" 
 #include "../include/packageGenerator.h"
 
+
 /** Read the band varibles from a .conf file
  * 
  * const char* conf_path: the path to the conf file
  * returns: a config_t struct with the information in the file
  */
-config_t get_config(const char* conf_path){
+config_t get_config_aux(const char* conf_path){
     config_t conf;
     FILE* file = fopen(conf_path, "r");
     if(file==NULL){
@@ -33,6 +34,9 @@ config_t get_config(const char* conf_path){
             }
             else if(!strcmp(prev,"bandLength")){
                 conf.bandLength = atoi(current);
+            }            
+			else if(!strcmp(prev,"bandDistro")){
+                conf.bandDistro = atoi(current);
             }
 			else if(!strcmp(prev,"packageRadsP")){
                 conf.packageRadsP = atoi(current);
@@ -53,6 +57,23 @@ config_t get_config(const char* conf_path){
     fclose(file);
     return conf;
 } 
+
+/** Read the band varibles from a specific .conf file
+ * 
+ * int bandId: which file to respective band
+ * returns: a config_t struct with the information in the file
+ */
+config_t get_config (int bandId) {
+	if (bandId == W_BAND){
+		return get_config_aux(WBAND_CONF_PATH);
+	} else if (bandId == SIGN_BAND){
+		return get_config_aux(SBAND_CONF_PATH);
+	} else if (bandId == RANDOM_BAND){
+		return get_config_aux(RBAND_CONF_PATH);
+	} else {
+		exit(EXIT_FAILURE);
+	}
+}
 
 /** Generate a random 0-100 number
  */
@@ -96,6 +117,7 @@ short chooseSide (int pLeft){
  * probability it will be sent on the sign band and the random band
  * 
  */
+/*
 short assignBand (int pSignBand, int pRandomBand){
 	int bandSelect = roll100();
 
@@ -107,6 +129,7 @@ short assignBand (int pSignBand, int pRandomBand){
 		return W_BAND;
 	}
 }
+*/
 
 /** Returns the type of package base on a percentile roll
   * 
@@ -283,22 +306,9 @@ int randNum (int mean, int stdDev, int distro) {
  * pSignBand: probabiliy % that the package will be assigned to the sign controlled band
  * pRandomBand: probability % that the package will be assigned to the randomly controlled band
  */
-void createPackage(int* packageCounter, package_t* newPackage, int pSignBand, int pRandomBand){
+void createPackage(int* packageCounter, package_t* newPackage, int bandId){
 
-	config_t conf;
-	short pkgBand = assignBand(pSignBand, pRandomBand);
-
-
-	if (pkgBand == W_BAND){
-		conf = get_config(WBAND_CONF_PATH);
-	} else if (pkgBand == SIGN_BAND){
-		conf = get_config(SBAND_CONF_PATH);
-	} else if (pkgBand == RANDOM_BAND){
-		conf = get_config(RBAND_CONF_PATH);
-	} else {
-		exit(EXIT_FAILURE);
-	}
-
+	config_t conf = get_config(bandId);
 	short pkgPriority = packageType(conf.packageRadsP,conf.packagePrioP);
 	float pkgWeight = measureWeight(pkgPriority);
 	short pkgSide = chooseSide(conf.packageLeftP);
@@ -309,9 +319,9 @@ void createPackage(int* packageCounter, package_t* newPackage, int pSignBand, in
 	newPackage->side = pkgSide;
 	newPackage->priority = pkgPriority;	
 	newPackage->progress = 1;
-	newPackage->band = pkgBand;
+	newPackage->band = bandId;
 	newPackage->on_band = false;
-	newPackage->execution_time = exeTime;
+	newPackage->total_execution_time = exeTime;
 	newPackage->remaining_time = exeTime;
 	newPackage->usage_time_start = -1;
 	*packageCounter  = *packageCounter + 1;
@@ -330,8 +340,8 @@ void checkPackage(package_t* testPackage){
 	printf("  Package piority: %d \n", testPackage->priority);
 	printf("  Package progress: %d \n", testPackage->progress);
 	printf("  Package in band: %d \n", testPackage->band);
-	printf("  Package execution time: %f \n", testPackage->execution_time);
+	printf("  Package execution time: %f \n", testPackage->total_execution_time);
 	printf("  Package has: %f s left on the band \n", testPackage->remaining_time);
-	printf("  Package started on: %d \n", testPackage->usage_time_start);
+	printf("  Package started on: %ld \n", testPackage->usage_time_start);
 }
 

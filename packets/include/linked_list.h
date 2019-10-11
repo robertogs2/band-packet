@@ -14,6 +14,7 @@ typedef struct config {
     int bandID;
     int bandStrength;
     int bandLength;
+    int bandDistro;
     int packageRadsP;
     int packagePrioP;
     int packageLeftP;
@@ -26,11 +27,14 @@ typedef struct package {
   short side;
   short priority;
   short progress;
+  double speed;
   short band;
   bool on_band;
-  double execution_time;
-  double remaining_time;
-  short usage_time_start;
+  double accum_execution_time;
+  double current_execution_time;
+  double total_execution_time;
+  double remaining_time; //total_execution_time - current_execution_time
+  clock_t usage_time_start;
 } package_t;
 
 
