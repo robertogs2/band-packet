@@ -11,8 +11,8 @@ int fiber1(void* arg){
     printf("%s\n", "enter fiber1");
     int a = *((int*)arg);
     int i;
-    for ( i = 0; i < 100000; ++i ){
-        //printf( "Hey, I'm fiber #1: %d asdasd %d\n", i ,a);
+    for ( i = 0; 1; ++i ){
+        printf( "Hey, I'm fiber #1: %d asdasd %d\n", i ,a);
         //fiberYield();
     }
     printf("%s\n", "end fiber1");
@@ -27,10 +27,10 @@ int fibonacchi(){
     printf("%s\n", "enter fiber2");
     /*sleep( 2 ); */
     //printf( "fibonacchi(0) = 0\nfibonnachi(1) = 1\n" );
-    for( i = 2; i < 1000000; ++ i )
+    for( i = 2; i < 10000000; ++ i )
     {
         int nextFib = fib[0] + fib[1];
-        //printf( "fibonacchi(%d) = %d\n", i, nextFib );
+        printf( "fibonacchi(%d) = %d\n", i, nextFib );
         fib[0] = fib[1];
         fib[1] = nextFib;
         //fiberYield();
@@ -45,8 +45,8 @@ int squares(){
     //Lmutex_lock(&mutex1);
     /*sleep( 5 ); */
     printf("%s\n", "enter fiber3");
-    for ( i = 0; i < 100000; ++ i ){
-        //printf( "%d*%d = %d\n", i, i, i*i );
+    for ( i = 0; i < 10000; ++ i ){
+        printf( "%d*%d = %d\n", i, i, i*i );
         //fiberYield();
     }
     //Lmutex_unlock(&mutex1);
@@ -69,9 +69,10 @@ int main(){
 
     /* Go fibers! */
     Lthread_create(&thread, NULL, &fiber1, ap);
+    
     Lthread_create(&thread2, NULL, &fibonacchi , NULL);
     Lthread_create(&thread3, NULL, &squares , NULL);
-    
+    //Lthread_join(thread, NULL);
     //spawnFiber( &squares );
     //Lthread_exit(thread3);
     // Lthread_detach(thread2);
