@@ -4,13 +4,13 @@
 #include <unistd.h>
 #include "../include/lpthread.h"
 
-const double QUANTUM = 5;
+const double QUANTUM = 1;
 const double BAND_DISTANCE = 100;
 char command[256];
 char buffer1[256];
 char buffer2[256];
 
-pthread_mutex_t mutex_file;
+lpthread_mutex_t mutex_file;
 
 Node_t * list_packages_0 = NULL;
 Node_t * list_packages_1 = NULL;
@@ -27,10 +27,18 @@ typedef struct ThreadParams{
 } params_t;
 
 void write_file(const char* filename, const char* msg){
-  pthread_mutex_lock(&mutex_file);
+  Lmutex_lock(&mutex_file);
   sprintf(command, "echo '%s' > '%s'", msg, filename);
   system(command);
-  pthread_mutex_unlock(&mutex_file);
+  Lmutex_unlock(&mutex_file);
+}
+
+void write_progress(int thread_id, int list_id){
+  //write progress to file
+  sprintf(buffer1, "%d\n%d\n%d", get_at(*lists[list_id], 0)->id,
+          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority);
+  sprintf(buffer2, "../../gui/data/band_%d.txt", thread_id);
+  write_file(buffer2, buffer1);
 }
 
 void wait_seconds(double seconds){
@@ -52,16 +60,17 @@ void update_progress(package_t* pack, enum scheduler_type type){
   //printf("Progress of package: %d is %d. Remaining time: %fs/%fs\n", pack->id, pack->progress, pack->remaining_time, pack->total_execution_time);
 }
 
-void* create_gui(){
+int create_gui(){
   system("python3 ../../gui/gui.py");
   return 0;
 }
 
-
-void* process_packages(void* params_ptr){
+int process_packages(void* params_ptr){
 
   params_t *params = (params_t*)params_ptr;
   if(params->type == ROUND_ROBIN){
+    printf("Algorithm %d for thread %d", params->type, params->id);
+    print_list(*lists[params->side_id]);
     //start algorithm
     set_usage_time_start(get_at(*lists[params->side_id], 0));
     while(get_length(*lists[params->side_id]) > 0){
@@ -72,19 +81,16 @@ void* process_packages(void* params_ptr){
         if(get_length(*lists[params->side_id]) > 0){
           //set time of new package
           set_usage_time_start(get_at(*lists[params->side_id], 0));
+
           print_list(*lists[params->side_id]);
         }
       }
       else{
         schedule_round_robin(lists[params->side_id], params->quantum);
         update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
-        //write progress to file
-        sprintf(buffer1, "%d\n%d\n%d", get_at(*lists[params->side_id], 0)->id,
-                get_at(*lists[params->side_id], 0)->progress, get_at(*lists[params->side_id], 0)->priority);
-        sprintf(buffer2, "../../gui/data/band_%d.txt", params->id);
-        write_file(buffer2, buffer1);
+        write_progress(params->id, params->side_id);
       }
-      wait_seconds(0.5);
+      wait_seconds(0.1);
     }
   }
   //non appropriative
@@ -92,6 +98,7 @@ void* process_packages(void* params_ptr){
     //start algorithm
     if(params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
     else if(params->type == SHORTEST_FIRST) schedule_shortest_first(*lists[params->side_id]);
+
     printf("Algorithm %d for thread %d", params->type, params->id);
     print_list(*lists[params->side_id]);
 
@@ -108,7 +115,6 @@ void* process_packages(void* params_ptr){
           if(params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
           else if(params->type == SHORTEST_FIRST) schedule_shortest_first(*lists[params->side_id]);
           //if fifo is is not necessary to reschedule
-
           //set time of new package
           set_usage_time_start(get_at(*lists[params->side_id], 0));
         }
@@ -116,11 +122,7 @@ void* process_packages(void* params_ptr){
       else{
         //update progress
         update_progress(get_at(*lists[params->side_id], 0), params->type);
-        //write progress to file
-        sprintf(buffer1, "%d\n%d\n%d", get_at(*lists[params->side_id], 0)->id,
-                get_at(*lists[params->side_id], 0)->progress, get_at(*lists[params->side_id], 0)->priority);
-        sprintf(buffer2, "../../gui/data/band_%d.txt", params->id);
-        write_file(buffer2, buffer1);
+        write_progress(params->id, params->side_id);
       }
       wait_seconds(0.1);
     }
@@ -133,6 +135,7 @@ void* process_packages(void* params_ptr){
 
 int main() {
   printf("Hello, World!\n");
+  Lmutex_init(&mutex_file, NULL);
   lists[0] = &list_packages_0;
   lists[1] = &list_packages_1;
   lists[2] = &list_packages_2;
@@ -172,7 +175,7 @@ int main() {
   packages_0[1].speed = 10;
   packages_0[2].speed = 15;
   packages_0[3].speed = 20;
-  packages_0[4].speed = 25;
+  packages_0[4].speed = 35;
 
   packages_0[5].speed = 70;
 
@@ -228,11 +231,11 @@ int main() {
 
   packages_2[5].priority = 1;
 
-  packages_2[0].speed = 5;
-  packages_2[1].speed = 10;
-  packages_2[2].speed = 15;
-  packages_2[3].speed = 20;
-  packages_2[4].speed = 25;
+  packages_2[0].speed = 35;
+  packages_2[1].speed = 40;
+  packages_2[2].speed = 45;
+  packages_2[3].speed = 50;
+  packages_2[4].speed = 55;
 
   packages_2[5].speed = 70;
 
@@ -254,47 +257,47 @@ int main() {
 
 
   //lpthread_t t_gui;
-  pthread_t t_gui;
+  lpthread_t t_gui;
 //  if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0)
-  if(pthread_create(&t_gui, NULL, &create_gui, NULL) != 0)
+  if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0)
     printf("\nCould not created Thread GUI\n");
 
-  pthread_t t_id_0;
+  lpthread_t t_id_0;
   params_t *params_0 = malloc(sizeof(params_t));
   params_0->id = 0;
   params_0->side_id = 0;
   params_0->quantum = QUANTUM;
   params_0->type = ROUND_ROBIN;
 
-  if(pthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0)
+  if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0)
     printf("\nCould not created Thread 0\n");
 
-  pthread_t t_id_1;
+  lpthread_t t_id_1;
   params_t *params_1 = malloc(sizeof(params_t));
   params_1->id = 1;
   params_1->side_id = 1;
   params_1->quantum = QUANTUM;
   params_1->type = PRIORITY;
 
-  if(pthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0)
+  if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0)
     printf("\nCould not created Thread 1\n");
 
-  pthread_t t_id_2;
+  lpthread_t t_id_2;
   params_t *params_2 = malloc(sizeof(params_t));
   params_2->id = 2;
   params_2->side_id = 2;
   params_2->quantum = QUANTUM;
   params_2->type = FIFO;
 
-  if(pthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0)
+  if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0)
     printf("\nCould not created Thread 2\n");
 
   //push_back(&list_packages_0, &packages_0[5]);
 
-  pthread_join(t_id_0, NULL);
-  pthread_join(t_id_1, NULL);
-  pthread_join(t_id_2, NULL);
-  pthread_join(t_gui, NULL);
+  Lthread_join(t_id_0, NULL);
+  Lthread_join(t_id_1, NULL);
+  Lthread_join(t_id_2, NULL);
+  Lthread_join(t_gui, NULL);
 
 
 
