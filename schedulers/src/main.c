@@ -4,17 +4,42 @@
 #include <unistd.h>
 #include "../include/lpthread.h"
 
-const double QUANTUM = 5;
+const double QUANTUM = 1;
 const double BAND_DISTANCE = 100;
+char command[256];
+char buffer1[256];
+char buffer2[256];
 
-Node_t * list_packages = NULL;
+lpthread_mutex_t mutex_file;
 
+Node_t * list_packages_0 = NULL;
+Node_t * list_packages_1 = NULL;
+Node_t * list_packages_2 = NULL;
+
+Node_t** lists[3];
 
 typedef struct ThreadParams{
+  int id;
+  int side_id;
   enum scheduler_type type;
   double quantum;
   double limit_time;
 } params_t;
+
+void write_file(const char* filename, const char* msg){
+  Lmutex_lock(&mutex_file);
+  sprintf(command, "echo '%s' > '%s'", msg, filename);
+  system(command);
+  Lmutex_unlock(&mutex_file);
+}
+
+void write_progress(int thread_id, int list_id){
+  //write progress to file
+  sprintf(buffer1, "%d\n%d\n%d", get_at(*lists[list_id], 0)->id,
+          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority);
+  sprintf(buffer2, "../../gui/data/band_%d.txt", thread_id);
+  write_file(buffer2, buffer1);
+}
 
 void wait_seconds(double seconds){
   clock_t start;
@@ -31,62 +56,73 @@ void update_progress(package_t* pack, enum scheduler_type type){
 
   pack->progress = (short) (pack->speed * pack->current_execution_time);
   pack->remaining_time = pack->total_execution_time - pack->current_execution_time;
-  printf("Progress of package: %d is %d. Remaining time: %fs/%fs\n", pack->id, pack->progress, pack->remaining_time, pack->total_execution_time);
+
+  //printf("Progress of package: %d is %d. Remaining time: %fs/%fs\n", pack->id, pack->progress, pack->remaining_time, pack->total_execution_time);
 }
 
+int create_gui(){
+  system("python3 ../../gui/gui.py");
+  return 0;
+}
 
 int process_packages(void* params_ptr){
 
   params_t *params = (params_t*)params_ptr;
   if(params->type == ROUND_ROBIN){
+    printf("Algorithm %d for thread %d", params->type, params->id);
+    print_list(*lists[params->side_id]);
     //start algorithm
-    set_usage_time_start(get_at(list_packages,0));
-    while(get_length(list_packages) > 0){
-      if(get_at(list_packages, 0)->progress >= 100){
+    set_usage_time_start(get_at(*lists[params->side_id], 0));
+    while(get_length(*lists[params->side_id]) > 0){
+      if(get_at(*lists[params->side_id], 0)->progress >= 100){
         //pop package and go to other
-        pop_front(&list_packages);
+        pop_front(lists[params->side_id]);
         //if there are packages left
-        if(get_length(list_packages) > 0){
+        if(get_length(*lists[params->side_id]) > 0){
           //set time of new package
-          set_usage_time_start(get_at(list_packages, 0));
-          print_list(list_packages);
+          set_usage_time_start(get_at(*lists[params->side_id], 0));
+
+          print_list(*lists[params->side_id]);
         }
       }
       else{
-        schedule_round_robin(&list_packages, params->quantum);
-        update_progress(get_at(list_packages, 0), ROUND_ROBIN);
+        schedule_round_robin(lists[params->side_id], params->quantum);
+        update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
+        write_progress(params->id, params->side_id);
       }
-      wait_seconds(0.5);
+      wait_seconds(0.1);
     }
   }
   //non appropriative
   else if(params->type == FIFO || params->type == PRIORITY || params->type == SHORTEST_FIRST){
     //start algorithm
-    if(params->type == PRIORITY) schedule_priority(list_packages);
-    else if(params->type == SHORTEST_FIRST) schedule_shortest_first(list_packages);
-    print_list(list_packages);
+    if(params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
+    else if(params->type == SHORTEST_FIRST) schedule_shortest_first(*lists[params->side_id]);
 
-    set_usage_time_start(get_at(list_packages, 0));
+    printf("Algorithm %d for thread %d", params->type, params->id);
+    print_list(*lists[params->side_id]);
+
+    set_usage_time_start(get_at(*lists[params->side_id], 0));
     //while there are packages
-    while(get_length(list_packages) > 0){
+    while(get_length(*lists[params->side_id]) > 0){
       //package is complete
-      if(get_at(list_packages, 0)->progress >= 100) {
+      if(get_at(*lists[params->side_id], 0)->progress >= 100) {
         //pop that package and go for next one
-        pop_front(&list_packages);
+        pop_front(lists[params->side_id]);
 
-        if(get_length(list_packages) > 0){
+        if(get_length(*lists[params->side_id]) > 0){
           //schedule again
-          if(params->type == PRIORITY) schedule_priority(list_packages);
-          else if(params->type == SHORTEST_FIRST) schedule_shortest_first(list_packages);
+          if(params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
+          else if(params->type == SHORTEST_FIRST) schedule_shortest_first(*lists[params->side_id]);
           //if fifo is is not necessary to reschedule
-
           //set time of new package
-          set_usage_time_start(get_at(list_packages, 0));
+          set_usage_time_start(get_at(*lists[params->side_id], 0));
         }
       }
       else{
         //update progress
-        update_progress(get_at(list_packages, 0), params->type);
+        update_progress(get_at(*lists[params->side_id], 0), params->type);
+        write_progress(params->id, params->side_id);
       }
       wait_seconds(0.1);
     }
@@ -99,140 +135,170 @@ int process_packages(void* params_ptr){
 
 int main() {
   printf("Hello, World!\n");
+  Lmutex_init(&mutex_file, NULL);
+  lists[0] = &list_packages_0;
+  lists[1] = &list_packages_1;
+  lists[2] = &list_packages_2;
 
-  package_t packages[6];
+  package_t packages_0[6];
+  package_t packages_1[6];
+  package_t packages_2[6];
 
   for(int i = 0; i < 5; ++i){
-    packages[i].id = i;
-    packages[i].progress = 0;
-    packages[i].accum_execution_time = 0;
-    push_back(&list_packages, &packages[i]);
+    packages_0[i].id = i;
+    packages_0[i].progress = 0;
+    packages_0[i].accum_execution_time = 0;
+    push_back(lists[0], &packages_0[i]);
+    packages_1[i].id = i;
+    packages_1[i].progress = 0;
+    packages_1[i].accum_execution_time = 0;
+    push_back(lists[1], &packages_1[i]);
+    packages_2[i].id = i;
+    packages_2[i].progress = 0;
+    packages_2[i].accum_execution_time = 0;
+    push_back(lists[2], &packages_2[i]);
   }
 
-  packages[5].id = 5;
+  packages_0[5].id = 5;
 
-  print_list(list_packages);
+  print_list(*lists[0]);
 
-  packages[0].priority = 5;
-  packages[1].priority = 2;
-  packages[2].priority = 3;
-  packages[3].priority = 1;
-  packages[4].priority = 4;
+  packages_0[0].priority = 3;
+  packages_0[1].priority = 2;
+  packages_0[2].priority = 2;
+  packages_0[3].priority = 1;
+  packages_0[4].priority = 1;
 
-  packages[5].priority = 1;
+  packages_0[5].priority = 1;
 
-  packages[0].speed = 5;
-  packages[1].speed = 10;
-  packages[2].speed = 15;
-  packages[3].speed = 20;
-  packages[4].speed = 25;
+  packages_0[0].speed = 5;
+  packages_0[1].speed = 10;
+  packages_0[2].speed = 15;
+  packages_0[3].speed = 20;
+  packages_0[4].speed = 35;
 
-  packages[5].speed = 70;
+  packages_0[5].speed = 70;
 
-  packages[0].total_execution_time = BAND_DISTANCE / packages[0].speed;
-  packages[1].total_execution_time = BAND_DISTANCE / packages[1].speed;
-  packages[2].total_execution_time = BAND_DISTANCE / packages[2].speed;
-  packages[3].total_execution_time = BAND_DISTANCE / packages[3].speed;
-  packages[4].total_execution_time = BAND_DISTANCE / packages[4].speed;
-  packages[5].total_execution_time = BAND_DISTANCE / packages[5].speed;
+  packages_0[0].total_execution_time = BAND_DISTANCE / packages_0[0].speed;
+  packages_0[1].total_execution_time = BAND_DISTANCE / packages_0[1].speed;
+  packages_0[2].total_execution_time = BAND_DISTANCE / packages_0[2].speed;
+  packages_0[3].total_execution_time = BAND_DISTANCE / packages_0[3].speed;
+  packages_0[4].total_execution_time = BAND_DISTANCE / packages_0[4].speed;
+  packages_0[5].total_execution_time = BAND_DISTANCE / packages_0[5].speed;
 
-//  packages[0].remaining_time = 34;
-//  packages[1].remaining_time = 5;
-//  packages[2].remaining_time = 3;
-//  packages[3].remaining_time = 50;
-//  packages[4].remaining_time = 7;
+  packages_0[0].remaining_time = packages_0[0].total_execution_time;
+  packages_0[1].remaining_time = packages_0[1].total_execution_time;
+  packages_0[2].remaining_time = packages_0[2].total_execution_time;
+  packages_0[3].remaining_time = packages_0[3].total_execution_time;
+  packages_0[4].remaining_time = packages_0[4].total_execution_time;
+  packages_0[5].remaining_time = packages_0[5].total_execution_time;
 
-  packages[0].remaining_time = packages[0].total_execution_time;
-  packages[1].remaining_time = packages[1].total_execution_time;
-  packages[2].remaining_time = packages[2].total_execution_time;
-  packages[3].remaining_time = packages[3].total_execution_time;
-  packages[4].remaining_time = packages[4].total_execution_time;
-  packages[5].remaining_time = packages[5].total_execution_time;
+  packages_1[0].priority = 2;
+  packages_1[1].priority = 2;
+  packages_1[2].priority = 3;
+  packages_1[3].priority = 1;
+  packages_1[4].priority = 1;
+
+  packages_1[5].priority = 1;
+
+  packages_1[0].speed = 80;
+  packages_1[1].speed = 90;
+  packages_1[2].speed = 85;
+  packages_1[3].speed = 90;
+  packages_1[4].speed = 85;
+
+  packages_1[5].speed = 70;
+
+  packages_1[0].total_execution_time = BAND_DISTANCE / packages_1[0].speed;
+  packages_1[1].total_execution_time = BAND_DISTANCE / packages_1[1].speed;
+  packages_1[2].total_execution_time = BAND_DISTANCE / packages_1[2].speed;
+  packages_1[3].total_execution_time = BAND_DISTANCE / packages_1[3].speed;
+  packages_1[4].total_execution_time = BAND_DISTANCE / packages_1[4].speed;
+  packages_1[5].total_execution_time = BAND_DISTANCE / packages_1[5].speed;
+
+  packages_1[0].remaining_time = packages_1[0].total_execution_time;
+  packages_1[1].remaining_time = packages_1[1].total_execution_time;
+  packages_1[2].remaining_time = packages_1[2].total_execution_time;
+  packages_1[3].remaining_time = packages_1[3].total_execution_time;
+  packages_1[4].remaining_time = packages_1[4].total_execution_time;
+  packages_1[5].remaining_time = packages_1[5].total_execution_time;
+
+  packages_2[0].priority = 3;
+  packages_2[1].priority = 2;
+  packages_2[2].priority = 3;
+  packages_2[3].priority = 1;
+  packages_2[4].priority = 2;
+
+  packages_2[5].priority = 1;
+
+  packages_2[0].speed = 35;
+  packages_2[1].speed = 40;
+  packages_2[2].speed = 45;
+  packages_2[3].speed = 50;
+  packages_2[4].speed = 55;
+
+  packages_2[5].speed = 70;
+
+  packages_2[0].total_execution_time = BAND_DISTANCE / packages_2[0].speed;
+  packages_2[1].total_execution_time = BAND_DISTANCE / packages_2[1].speed;
+  packages_2[2].total_execution_time = BAND_DISTANCE / packages_2[2].speed;
+  packages_2[3].total_execution_time = BAND_DISTANCE / packages_2[3].speed;
+  packages_2[4].total_execution_time = BAND_DISTANCE / packages_2[4].speed;
+  packages_2[5].total_execution_time = BAND_DISTANCE / packages_2[5].speed;
+
+  packages_2[0].remaining_time = packages_2[0].total_execution_time;
+  packages_2[1].remaining_time = packages_2[1].total_execution_time;
+  packages_2[2].remaining_time = packages_2[2].total_execution_time;
+  packages_2[3].remaining_time = packages_2[3].total_execution_time;
+  packages_2[4].remaining_time = packages_2[4].total_execution_time;
+  packages_2[5].remaining_time = packages_2[5].total_execution_time;
 
   //printf("Schedule by Round Robin\n");
 
 
-  lpthread_t t_id_0;
-  params_t *params = malloc(sizeof(params_t));
-  params->quantum = QUANTUM;
-  params->type = PRIORITY;
+  //lpthread_t t_gui;
+  lpthread_t t_gui;
+//  if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0)
+  if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0)
+    printf("\nCould not created Thread GUI\n");
 
-  if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params) != 0)
+  lpthread_t t_id_0;
+  params_t *params_0 = malloc(sizeof(params_t));
+  params_0->id = 0;
+  params_0->side_id = 0;
+  params_0->quantum = QUANTUM;
+  params_0->type = ROUND_ROBIN;
+
+  if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0)
     printf("\nCould not created Thread 0\n");
 
-  push_back(&list_packages, &packages[5]);
+  lpthread_t t_id_1;
+  params_t *params_1 = malloc(sizeof(params_t));
+  params_1->id = 1;
+  params_1->side_id = 1;
+  params_1->quantum = QUANTUM;
+  params_1->type = PRIORITY;
+
+  if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0)
+    printf("\nCould not created Thread 1\n");
+
+  lpthread_t t_id_2;
+  params_t *params_2 = malloc(sizeof(params_t));
+  params_2->id = 2;
+  params_2->side_id = 2;
+  params_2->quantum = QUANTUM;
+  params_2->type = FIFO;
+
+  if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0)
+    printf("\nCould not created Thread 2\n");
+
+  //push_back(&list_packages_0, &packages_0[5]);
 
   Lthread_join(t_id_0, NULL);
+  Lthread_join(t_id_1, NULL);
+  Lthread_join(t_id_2, NULL);
+  Lthread_join(t_gui, NULL);
 
-//  printf("Schedule by FIFO\n");
-//  print_list(list_packages);
-//
-//
-//
-//  printf("Schedule by priority\n");
-//  schedule_priority(list_packages);
-//  print_list(list_packages);
-//  //3 1 2 4 0
-//
-//
-//  printf("Schedule by shortest first\n");
-//  schedule_shortest_first(list_packages);
-//  print_list(list_packages);
-//  //4 3 2 0 1
-//
-//
-//
-//
-//  printf("Schedule by 'real time'\n");
-//  schedule_real_time(list_packages,50);
-//  print_list(list_packages);
-//  //2 1 4 0 3
-
-
-//  lpthread_t t_id_0;
-//  params_t *params = malloc(sizeof(params_t));
-//  params->quantum = QUANTUM;
-//  params->type = SHORTEST_FIRST;
-//
-//  if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params) != 0)
-//    printf("\nCould not created Thread 0\n");
-//
-//  Lthread_join(t_id_0, NULL);
-
-
-
-
-
-
-
-//
-//  pop_back(list_packages);
-//
-//  printf("%d\n", get_length(list_packages));
-//  push_back(&list_packages, &packages[0]);
-//  push_front(&list_packages, &packages[1]);
-//  push_back(&list_packages, &packages[1]);
-//  print_list(list_packages);
-//  //printf("Value removed: %d \n",remove_at(&list_packages, 2)->id);
-//  push_front(&list_packages, &packages[2]);
-//  push_front(&list_packages, &packages[3]);
-//  printf("%d\n", get_length(list_packages));
-//  print_list(list_packages);
-//  printf("Get Value: %d\n",get_at(list_packages, 0)->id);
-//  printf("Get Value: %d\n",get_at(list_packages, 1)->id);
-//  printf("Get Value: %d\n",get_at(list_packages, 2)->id);
-//  printf("Get Value: %d\n",get_at(list_packages, 3)->id);
-//  printf("Get Value: %d\n",get_at(list_packages, 4)->id);
-//  print_list(list_packages);
-//  printf("Set Value: %d\n",set_at(list_packages, 0, &packages[4])->id);
-//  printf("Set Value: %d\n",set_at(list_packages, 1, &packages[4])->id);
-//  printf("Set Value: %d\n",set_at(list_packages, 2, &packages[4])->id);
-//  printf("Set Value: %d\n",set_at(list_packages, 3, &packages[4])->id);
-//  printf("Set Value: %d\n",set_at(list_packages, 4, &packages[3])->id);
-//  set_at(list_packages, 5, &packages[4]);
-//  print_list(list_packages);
-//  swap(list_packages, 3, 4);
-//  print_list(list_packages);
 
 
   return 0;
