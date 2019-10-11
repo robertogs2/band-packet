@@ -2,9 +2,57 @@
 #include <stdlib.h> 
 #include <math.h>
 #include <time.h> 
+#include <string.h> 
 #include "../include/constants.h"
-#include "../include/linked_list.h"
+#include "../include/linked_list.h" 
 #include "../include/packageGenerator.h"
+
+/** Read the band varibles from a .conf file
+ * 
+ * const char* conf_path: the path to the conf file
+ * returns: a config_t struct with the information in the file
+ */
+config_t get_config(const char* conf_path){
+    config_t conf;
+    FILE* file = fopen(conf_path, "r");
+    if(file==NULL){
+        printf ("Path to config not avaliable. \n");
+        exit(EXIT_FAILURE); 
+    }
+    char line[256];
+    char prev[256];
+    while (fgets(line, sizeof(line), file)) {
+        char* current = strtok (line, "=:");
+        //prev={0};
+        while (current) {
+            if(!strcmp(prev,"bandID")){
+                conf.bandID = atoi(current);
+            }
+            else if(!strcmp(prev,"bandStrength")){
+                conf.bandStrength = atoi(current);
+            }
+            else if(!strcmp(prev,"bandLength")){
+                conf.bandLength = atoi(current);
+            }
+			else if(!strcmp(prev,"packageRadsP")){
+                conf.packageRadsP = atoi(current);
+            }
+			else if(!strcmp(prev,"packagePrioP")){
+                conf.packagePrioP = atoi(current);
+            }
+			else if(!strcmp(prev,"packageLeftP")){
+                conf.packageLeftP = atoi(current);
+            }
+			else if(!strcmp(prev,"bandParameter")){
+                conf.bandParameter = atoi(current);
+            }
+            strcpy(prev, current);
+            current = strtok (NULL, "=:");
+        }
+    }
+    fclose(file);
+    return conf;
+} 
 
 /** Generate a random 0-100 number
  */
@@ -91,9 +139,7 @@ void testPackageType () {
   int totalPkg = 1000;
   int is, rads, prio, norm;
   is = rads = prio = norm = 0;
-  
-  srand(time(0));  
-  
+    
   for (;totalPkg>0;--totalPkg){
 	  is = packageType(pRads, pPrime);
 	  switch (is) {
@@ -116,9 +162,9 @@ void testPackageType () {
  * 
  * return t: the time the package will be on the band [s]
  */
-short timeOnBand (int pkgWeight, int bandLen, int bandStr){
+double timeOnBand (float pkgWeight, int bandLen, int bandStr){
 	double mdf = pkgWeight*bandLen/bandStr;
-	short t = (short) 0.5*mdf;//* sqrt(mdf); problems linking math.h in the makefile
+	double t = 0.5*mdf;//* sqrt(mdf); problems linking math.h in the makefile
 	return t;
 }
 
@@ -237,27 +283,40 @@ int randNum (int mean, int stdDev, int distro) {
  * pSignBand: probabiliy % that the package will be assigned to the sign controlled band
  * pRandomBand: probability % that the package will be assigned to the randomly controlled band
  */
-void createPackage(int* packageCounter, package_t* newPackage, int pRads, int pUrge, int pLeft, int pSignBand, int pRandomBand){
+void createPackage(int* packageCounter, package_t* newPackage, int pSignBand, int pRandomBand){
 
-		short pkgPriority = packageType(pRads,pUrge);
-		float pkgWeight = measureWeight(pkgPriority);
-		short pkgSide = chooseSide(pLeft);
-		short pkgBand = assignBand(pSignBand, pRandomBand);
-		short exeTime = timeOnBand(pkgWeight, 10, 100);//getBandLen(pkgBand), getBandStr(pkgBand));
-					
-		newPackage->id = *packageCounter;
-		newPackage->weight = pkgWeight;
-		newPackage->side = pkgSide;
-		newPackage->priority = pkgPriority;	
-		newPackage->progress = 1;
-		newPackage->band = pkgBand;
-		newPackage->on_band = false;
-		newPackage->execution_time = exeTime;
-		newPackage->remaining_time = exeTime;
-		newPackage->usage_time_start = -1;
-		*packageCounter  = *packageCounter + 1;
-			
-		printf ("Created package %d \n", newPackage->id);
+	config_t conf;
+	short pkgBand = assignBand(pSignBand, pRandomBand);
+
+
+	if (pkgBand == W_BAND){
+		conf = get_config(WBAND_CONF_PATH);
+	} else if (pkgBand == SIGN_BAND){
+		conf = get_config(SBAND_CONF_PATH);
+	} else if (pkgBand == RANDOM_BAND){
+		conf = get_config(RBAND_CONF_PATH);
+	} else {
+		exit(EXIT_FAILURE);
+	}
+
+	short pkgPriority = packageType(conf.packageRadsP,conf.packagePrioP);
+	float pkgWeight = measureWeight(pkgPriority);
+	short pkgSide = chooseSide(conf.packageLeftP);
+	double exeTime = timeOnBand(pkgWeight, conf.bandLength, conf.bandStrength);
+				
+	newPackage->id = *packageCounter;
+	newPackage->weight = pkgWeight;
+	newPackage->side = pkgSide;
+	newPackage->priority = pkgPriority;	
+	newPackage->progress = 1;
+	newPackage->band = pkgBand;
+	newPackage->on_band = false;
+	newPackage->execution_time = exeTime;
+	newPackage->remaining_time = exeTime;
+	newPackage->usage_time_start = -1;
+	*packageCounter  = *packageCounter + 1;
+		
+	printf ("Created package %d \n", newPackage->id);
 }
 
 /** Prints a package contents
@@ -271,8 +330,8 @@ void checkPackage(package_t* testPackage){
 	printf("  Package piority: %d \n", testPackage->priority);
 	printf("  Package progress: %d \n", testPackage->progress);
 	printf("  Package in band: %d \n", testPackage->band);
-	printf("  Package execution time: %d \n", testPackage->execution_time);
-	printf("  Package has: %d s left on the band \n", testPackage->remaining_time);
+	printf("  Package execution time: %f \n", testPackage->execution_time);
+	printf("  Package has: %f s left on the band \n", testPackage->remaining_time);
 	printf("  Package started on: %d \n", testPackage->usage_time_start);
 }
 

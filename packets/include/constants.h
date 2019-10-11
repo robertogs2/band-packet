@@ -1,17 +1,6 @@
 #ifndef CONSTANTS 
 #define CONSTANTS 
 
-typedef struct config {
-    int bandID;
-    int bandStrength;
-    int bandLength;
-    int packageDistro;
-    int packageRadsP;
-    int packagePrioP;
-    int packageLeftP;
-    int bandParameter;
-} config_t;
-
 const int HUNDRED_PERCENT = 100;
 const int ZERO = 0;
 
@@ -29,5 +18,10 @@ const short RANDOM_BAND = 2;
 const int CONST_DISTRO = 0;
 const int GAUSSIAN_DISTRO = 1;
 const int GAMMA_DISTRO = 2;
+
+const char* WBAND_CONF_PATH = "config/bandW.conf";
+const char* SBAND_CONF_PATH = "config/bandSign.conf";
+const char* RBAND_CONF_PATH = "config/bandRand.conf";
+const char* AUX_FILE_PATH = "config/config.aux";
 
 #endif // CONSTANTS

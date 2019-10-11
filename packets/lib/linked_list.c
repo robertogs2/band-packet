@@ -1,7 +1,6 @@
 //
 // Created by lionheart on 8/10/19.
 //
-
 #include "../include/linked_list.h"
 
 

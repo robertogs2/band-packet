@@ -73,31 +73,31 @@ int Lthread_yield(){
 
 int Lthread_join(lpthread_t thread, void **retval){
 	//printf("%s%p\n", "joining",thread);
-	int id = thread.pid;
+	//int id = thread.pid;
 	int index = map_pid_index(thread.pid);
 	//printf("Thread to join id%d\n", id);
 	// Stop the others threads
 
 	if(lpthreadList[index].detached==0){
-		for(int i = 0; i < numLPthreads; ++i){
-			pid_t another_id = lpthreadList[i].pid;
-			if(another_id != id && another_id > 0){
-				printf("Stopping thread with id: %d\n", another_id);
-				kill(another_id, SIGSTOP);
-			}
-		}
+		// for(int i = 0; i < numLPthreads; ++i){
+		// 	pid_t another_id = lpthreadList[i].pid;
+		// 	if(another_id != id && another_id > 0){
+		// 		printf("Stopping thread with id: %d\n", another_id);
+		// 		kill(another_id, SIGSTOP);
+		// 	}
+		// }
 
 		//printf("Joining: %d\n", thread.pid);
 		waitpid(thread.pid, 0, 0);
 		printf("%s\n", "done");
 
-		for(int i = 0; i < numLPthreads; ++i){
-			pid_t another_id = lpthreadList[i].pid;
-			if(another_id != id && another_id > 0){
-				printf("Restarting thread with id: %d\n", another_id);
-				kill(another_id, SIGCONT);
-			}
-		}
+		// for(int i = 0; i < numLPthreads; ++i){
+		// 	pid_t another_id = lpthreadList[i].pid;
+		// 	if(another_id != id && another_id > 0){
+		// 		printf("Restarting thread with id: %d\n", another_id);
+		// 		kill(another_id, SIGCONT);
+		// 	}
+		// }
 
 		return 0;
 	}
