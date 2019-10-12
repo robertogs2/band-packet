@@ -3,9 +3,9 @@
 #include <math.h>
 #include <time.h> 
 #include <string.h> 
-#include "../include/constants.h"
-#include "../include/linked_list.h" 
-#include "../include/packageGenerator.h"
+#include "constants.h"
+#include "linked_list.h" 
+#include "package_generator.h"
 
 
 /** Read the band varibles from a .conf file

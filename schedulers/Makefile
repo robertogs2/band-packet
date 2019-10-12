@@ -7,3 +7,4 @@ all:
 clean:
 	rm -r bin
 	rm lib/*.o
+	rm lib/*.a

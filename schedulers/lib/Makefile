@@ -1,7 +1,6 @@
 LINKED_LIST_LIB = lib_linked_list.a
 LINKED_LIST_SRC = linked_list.c
 LINKED_LIST_OBJ = linked_list.o
-AR = ar rvs
 
 SCHEDULERS_LIB = lib_schedulers.a
 SCHEDULERS_SRC = schedulers.c
@@ -11,12 +10,17 @@ THREADS_LIB = lib_lpthread.a
 THREADS_SRC = lpthread.c
 THREADS_OBJ = lpthread.o
 
+PACKAGE_LIB = lib_package.a
+PACKAGE_SRC = package_generator.c
+PACKAGE_OBJ = package_generator.o
+
+
 INC_DIR = ../include/
 LIB_DIR=../lib/
 CC = gcc -c -I$(INC_DIR)
+AR = ar rvs
 
-all: $(LINKED_LIST_LIB) $(SCHEDULERS_LIB) $(THREADS_LIB)
-
+all: $(THREADS_LIB) $(LINKED_LIST_LIB) $(SCHEDULERS_LIB) $(PACKAGE_LIB)
 
 $(SCHEDULERS_LIB) : $(SCHEDULERS_OBJ)
 		$(AR) $(SCHEDULERS_LIB) $(SCHEDULERS_OBJ)
@@ -32,6 +36,11 @@ $(THREADS_LIB) : $(THREADS_OBJ)
 		$(AR) $(THREADS_LIB) $(THREADS_OBJ)
 $(THREADS_OBJ) : $(THREADS_SRC)
 		$(CC) $(THREADS_SRC)
+
+$(PACKAGE_LIB) : $(PACKAGE_OBJ)
+		$(AR) $(PACKAGE_LIB) $(PACKAGE_OBJ)
+$(PACKAGE_OBJ) : $(PACKAGE_SRC)
+		$(CC) $(PACKAGE_SRC)
 
 clean:
 		rm *.o

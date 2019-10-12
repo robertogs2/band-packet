@@ -2,12 +2,24 @@
 // Created by lionheart on 8/10/19.
 //
 
-#ifndef SCHEDULERS_LINKED_LIST_H
-#define SCHEDULERS_LINKED_LIST_H
-
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef SCHEDULERS_LINKED_LIST_H
+#define SCHEDULERS_LINKED_LIST_H
+
+
+typedef struct config {
+    int bandID;
+    int bandStrength;
+    int bandLength;
+    int bandDistro;
+    int packageRadsP;
+    int packagePrioP;
+    int packageLeftP;
+    int bandParameter;
+} config_t;
 
 typedef struct package {
   int id;
