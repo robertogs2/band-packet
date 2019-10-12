@@ -156,6 +156,7 @@ void package_generation(){
     config_t bandConf = get_config(bandId);
     int mean = bandConf.bandMean;          // mean of packages created, cte?
     int stdDev = bandConf.bandStdDev;         // variation of packages created (max 1/4 of mean), cte?
+    printf("Mean %d, StdDev: %d", mean, stdDev);
     int newPkgs = randNum(mean, stdDev, bandConf.bandDistro);
     printf("Quantity generated: %d for band id %d: %s\n", newPkgs, bandId, side_names[counter_list]);
 
@@ -201,6 +202,12 @@ int main() {
   package_generation();
 
   print_list(*lists[0]);
+  print_list(*lists[1]);
+  print_list(*lists[2]);
+  print_list(*lists[3]);
+  print_list(*lists[4]);
+  print_list(*lists[5]);
+
 
 
 //
@@ -321,16 +328,16 @@ int main() {
 //
 //
   //lpthread_t t_gui;
-//  lpthread_t t_gui;
-//  if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0)
-//    printf("\nCould not created Thread GUI\n");
+  lpthread_t t_gui;
+  if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0)
+    printf("\nCould not created Thread GUI\n");
 //
   lpthread_t t_id_0;
   params_t *params_0 = malloc(sizeof(params_t));
   params_0->id = 0;
   params_0->side_id = 0;
   params_0->quantum = QUANTUM;
-  params_0->type = ROUND_ROBIN;
+  params_0->type = FIFO;
   params_0->side = 1;
 //
   if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0)
@@ -363,7 +370,7 @@ int main() {
   Lthread_join(t_id_0, NULL);
 //  Lthread_join(t_id_1, NULL);
 //  Lthread_join(t_id_2, NULL);
- // Lthread_join(t_gui, NULL);
+  Lthread_join(t_gui, NULL);
 
   return 0;
 }
