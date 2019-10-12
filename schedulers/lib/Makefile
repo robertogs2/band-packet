@@ -1,31 +1,37 @@
-LIBS = lib_linked_list.a
-SRC = linked_list.c
-OBJ = linked_list.o
+LINKED_LIST_LIB = lib_linked_list.a
+LINKED_LIST_SRC = linked_list.c
+LINKED_LIST_OBJ = linked_list.o
 AR = ar rvs
 
-LIBS2 = lib_schedulers.a
-SRC2 = schedulers.c
-OBJ2 = schedulers.o
+SCHEDULERS_LIB = lib_schedulers.a
+SCHEDULERS_SRC = schedulers.c
+SCHEDULERS_OBJ = schedulers.o
 
-INCLUDE_DIR = ../include/
+THREADS_LIB = lib_lpthread.a
+THREADS_SRC = lpthread.c
+THREADS_OBJ = lpthread.o
+
+INC_DIR = ../include/
 LIB_DIR=../lib/
-CC = gcc -c -I$(INCLUDE_DIR)
+CC = gcc -c -I$(INC_DIR)
 
-all: $(LIBS) $(LIBS2)
-
-
-$(LIBS2) : $(OBJ2)
-		$(AR) $(LIBS2) $(OBJ2)
-
-$(OBJ2) : $(SRC2)
-		$(CC) $(SRC2) $(LIB_DIR)$(LIBS)
-
-$(LIBS) : $(OBJ)
-		$(AR) $(LIBS) $(OBJ)
-
-$(OBJ) : $(SRC)
-		$(CC) $(SRC)
+all: $(LINKED_LIST_LIB) $(SCHEDULERS_LIB) $(THREADS_LIB)
 
 
-clean: $(LIBS)
-		rm $(OBJ)
+$(SCHEDULERS_LIB) : $(SCHEDULERS_OBJ)
+		$(AR) $(SCHEDULERS_LIB) $(SCHEDULERS_OBJ)
+$(SCHEDULERS_OBJ) : $(SCHEDULERS_SRC)
+		$(CC) $(SCHEDULERS_SRC) $(LIB_DIR)$(LINKED_LIST_LIB)
+
+$(LINKED_LIST_LIB) : $(LINKED_LIST_OBJ)
+		$(AR) $(LINKED_LIST_LIB) $(LINKED_LIST_OBJ)
+$(LINKED_LIST_OBJ) : $(LINKED_LIST_SRC)
+		$(CC) $(LINKED_LIST_SRC)
+
+$(THREADS_LIB) : $(THREADS_OBJ)
+		$(AR) $(THREADS_LIB) $(THREADS_OBJ)
+$(THREADS_OBJ) : $(THREADS_SRC)
+		$(CC) $(THREADS_SRC)
+
+clean:
+		rm *.o

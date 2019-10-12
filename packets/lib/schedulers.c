@@ -34,9 +34,9 @@ int partition(Node_t *list_packages, int low, int high, enum scheduler_type type
       break;
     }
     case SHORTEST_FIRST:{
-      pivot = get_at(list_packages,high)->execution_time;
+      pivot = get_at(list_packages,high)->total_execution_time;
       for(j = low; j <= high ; ++j){
-        if(get_at(list_packages, j)->execution_time < pivot){
+        if(get_at(list_packages, j)->total_execution_time < pivot){
           i++;
           swap(list_packages, i, j);
         }
