@@ -3,6 +3,9 @@
 #include <pthread.h>
 #include <unistd.h>
 #include "../include/lpthread.h"
+#include "../include/package_generator.h"
+
+char* scheduler_names[5] = {"ROUND_ROBIN", "PRIORITY", "SHORTEST_FIRST", "FIFO", "RTOS"};
 
 const double QUANTUM = 1;
 const double BAND_DISTANCE = 100;
@@ -70,7 +73,7 @@ int process_packages(void* params_ptr){
 
   params_t *params = (params_t*)params_ptr;
   if(params->type == ROUND_ROBIN){
-    printf("Algorithm %d for thread %d", params->type, params->id);
+    printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
     print_list(*lists[params->side_id]);
     //start algorithm
     set_usage_time_start(get_at(*lists[params->side_id], 0));
@@ -100,7 +103,7 @@ int process_packages(void* params_ptr){
     if(params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
     else if(params->type == SHORTEST_FIRST) schedule_shortest_first(*lists[params->side_id]);
 
-    printf("Algorithm %d for thread %d", params->type, params->id);
+    printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
     print_list(*lists[params->side_id]);
 
     set_usage_time_start(get_at(*lists[params->side_id], 0));
