@@ -38,6 +38,12 @@ config_t get_config_aux(const char* conf_path){
 			else if(!strcmp(prev,"bandDistro")){
                 conf.bandDistro = atoi(current);
             }
+			else if(!strcmp(prev,"bandMean")){
+                conf.bandMean = atoi(current);
+            }
+			else if(!strcmp(prev,"bandStdDev")){
+                conf.bandStdDev = atoi(current);
+            }
 			else if(!strcmp(prev,"packageRadsP")){
                 conf.packageRadsP = atoi(current);
             }
@@ -344,8 +350,7 @@ void checkPackage(package_t* testPackage){
 	printf("  Package moves at: %.2f m/s", testPackage->speed);
 	printf(" in band: %d \n", testPackage->band);
 	printf("  Package has been on the band for %.2f s\n", testPackage->accum_execution_time);
-	printf("  Package execution time: S%.2f \n", testPackage->total_execution_time);
+	printf("  Package execution time: %.2f \n", testPackage->total_execution_time);
 	printf("  Package has: %f s left on the band \n", testPackage->remaining_time);
-	printf("  Package started on: %ld \n", testPackage->usage_time_start);
 }
 

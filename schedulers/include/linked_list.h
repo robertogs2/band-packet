@@ -15,6 +15,8 @@ typedef struct config {
     int bandStrength;
     int bandLength;
     int bandDistro;
+    int bandMean;
+    int bandStdDev;
     int packageRadsP;
     int packagePrioP;
     int packageLeftP;

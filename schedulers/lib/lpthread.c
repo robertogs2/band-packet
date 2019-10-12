@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
 
-#include "lpthread.h"
+#include "../include/lpthread.h"
 
 /* The lpthread "queue" */
 static lpthread_t lpthreadList[MAX_FIBERS];
@@ -13,7 +13,6 @@ static int numLPthreads = 0;
 static char started_ = 0;
 
 int Lthread_create(lpthread_t* thread, const lpthread_attr_t *attr, int (*start_routine)(void*), void* arg){
-	printf("%s\n", "Creating new thread");
 	if(started_ == 0){
 		init_threads();
 		started_=1;

@@ -3,9 +3,9 @@
 #include <math.h>
 #include <time.h> 
 #include <string.h> 
-#include "constants.h"
-#include "linked_list.h" 
-#include "package_generator.h"
+#include "../include/constants.h"
+#include "../include/linked_list.h"
+#include "../include/package_generator.h"
 
 
 /** Read the band varibles from a .conf file
@@ -37,6 +37,12 @@ config_t get_config_aux(const char* conf_path){
             }            
 			else if(!strcmp(prev,"bandDistro")){
                 conf.bandDistro = atoi(current);
+            }
+			else if(!strcmp(prev,"bandMean")){
+                conf.bandMean = atoi(current);
+            }
+			else if(!strcmp(prev,"bandStdDev")){
+                conf.bandStdDev = atoi(current);
             }
 			else if(!strcmp(prev,"packageRadsP")){
                 conf.packageRadsP = atoi(current);
@@ -80,7 +86,7 @@ config_t get_config (int bandId) {
 int roll100(){
 	int lowRange = ZERO;	  
 	int hiRange = HUNDRED_PERCENT;
-	int percentRoll = (rand() % (hiRange - lowRange + 1)) + lowRange;
+	int percentRoll = rand() % 101;
 	return percentRoll;
 }
 
@@ -105,7 +111,8 @@ float measureWeight (int priority){
  * of the package being on the left
  */
 short chooseSide (int pLeft){
-	int sideRoll = (rand() % (100 + 1));
+
+	int sideRoll = roll100();
 	if (sideRoll > pLeft) {
 		return LEFT_SIDE;
 	} else {
@@ -142,9 +149,7 @@ short assignBand (int pSignBand, int pRandomBand){
   *   		2 : radioactive
   */
 short packageType (int pRads, int pPrime) {
-	
 	int packageType = roll100();
-	
 	if (packageType < pRads) {
 		return RADIOACTIVE;
 	} else if (packageType > HUNDRED_PERCENT-pPrime) {
@@ -327,8 +332,6 @@ void createPackage(int* packageCounter, package_t* newPackage, int bandId){
 	newPackage->total_execution_time = exeTime;
 	newPackage->remaining_time = exeTime;
 	*packageCounter  = *packageCounter + 1;
-		
-	printf ("Created package %d \n", newPackage->id);
 }
 
 /** Prints a package contents
@@ -344,8 +347,7 @@ void checkPackage(package_t* testPackage){
 	printf("  Package moves at: %.2f m/s", testPackage->speed);
 	printf(" in band: %d \n", testPackage->band);
 	printf("  Package has been on the band for %.2f s\n", testPackage->accum_execution_time);
-	printf("  Package execution time: S%.2f \n", testPackage->total_execution_time);
+	printf("  Package execution time: %.2f \n", testPackage->total_execution_time);
 	printf("  Package has: %f s left on the band \n", testPackage->remaining_time);
-	printf("  Package started on: %ld \n", testPackage->usage_time_start);
 }
 

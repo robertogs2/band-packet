@@ -4,9 +4,9 @@
 #define HUNDRED_PERCENT  100
 #define ZERO  0
 
-#define RADIOACTIVE  2	// Send in real time
+#define RADIOACTIVE  0	// Send in real time
 #define URGENT  1		    // Send asap
-#define NORMAL  0		    // Send when possible
+#define NORMAL  2		    // Send when possible
 
 #define LEFT_SIDE  0
 #define RIGHT_SIDE  1
