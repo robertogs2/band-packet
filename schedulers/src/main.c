@@ -24,6 +24,7 @@ typedef struct ThreadParams{
   enum scheduler_type type;
   double quantum;
   double limit_time;
+  short side;
 } params_t;
 
 void write_file(const char* filename, const char* msg){
@@ -33,10 +34,10 @@ void write_file(const char* filename, const char* msg){
   Lmutex_unlock(&mutex_file);
 }
 
-void write_progress(int thread_id, int list_id){
+void write_progress(int thread_id, int list_id, short side){
   //write progress to file
-  sprintf(buffer1, "%d\n%d\n%d", get_at(*lists[list_id], 0)->id,
-          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority);
+  sprintf(buffer1, "%d\n%d\n%d\n%d", get_at(*lists[list_id], 0)->id,
+          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority, side);
   sprintf(buffer2, "../../gui/data/band_%d.txt", thread_id);
   write_file(buffer2, buffer1);
 }
@@ -88,7 +89,7 @@ int process_packages(void* params_ptr){
       else{
         schedule_round_robin(lists[params->side_id], params->quantum);
         update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
-        write_progress(params->id, params->side_id);
+        write_progress(params->id, params->side_id, params->side);
       }
       wait_seconds(0.1);
     }
@@ -122,7 +123,7 @@ int process_packages(void* params_ptr){
       else{
         //update progress
         update_progress(get_at(*lists[params->side_id], 0), params->type);
-        write_progress(params->id, params->side_id);
+        write_progress(params->id, params->side_id, params->side);
       }
       wait_seconds(0.1);
     }
@@ -268,6 +269,7 @@ int main() {
   params_0->side_id = 0;
   params_0->quantum = QUANTUM;
   params_0->type = ROUND_ROBIN;
+  params_0->side = 1;
 
   if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0)
     printf("\nCould not created Thread 0\n");
@@ -278,6 +280,7 @@ int main() {
   params_1->side_id = 1;
   params_1->quantum = QUANTUM;
   params_1->type = PRIORITY;
+  params_1->side = 0;
 
   if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0)
     printf("\nCould not created Thread 1\n");
@@ -288,6 +291,7 @@ int main() {
   params_2->side_id = 2;
   params_2->quantum = QUANTUM;
   params_2->type = FIFO;
+  params_2->side = 1;
 
   if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0)
     printf("\nCould not created Thread 2\n");
