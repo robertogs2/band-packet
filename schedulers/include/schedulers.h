@@ -40,7 +40,7 @@ void schedule_priority(Node_t* list_packages);
  * Schedule a list of packages using Round Robin policy
  * @param list_packages
  */
-void schedule_round_robin(Node_t** list_packages, double quantum);
+int schedule_round_robin(Node_t** list_packages, double quantum);
 
 /**
  * Schedule a list of packages using shortest first policy

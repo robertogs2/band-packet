@@ -78,7 +78,7 @@ void schedule_fifo(Node_t *list_packages) {
   //If packages are pushed back to the list then it is currently sorted
 }
 
-void schedule_round_robin(Node_t **list_packages, double quantum) {
+int schedule_round_robin(Node_t **list_packages, double quantum) {
   double cpu_time_used = get_used_time(get_at(*list_packages,0));
   //time is over go to next package
   if(cpu_time_used > quantum){
@@ -90,7 +90,9 @@ void schedule_round_robin(Node_t **list_packages, double quantum) {
     set_usage_time_start(get_at(*list_packages,0));
     //update list
     print_list(*list_packages);
+    return 1;
   }
+  return 0;
 }
 
 void set_usage_time_start(package_t *pack) {

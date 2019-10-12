@@ -174,7 +174,7 @@ class App:
           pos = 840 - (pkg_progress * 900 // 100)
           if (pkg_progress > 100):
             pos = -60
-          self.sign_image_0_label.config(image=self.sign_left)
+          self.sign_image_1_label.config(image=self.sign_left)
 
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
@@ -218,7 +218,7 @@ class App:
           pos = 840 - (pkg_progress * 900 // 100)
           if (pkg_progress > 100):
             pos = -60
-          self.sign_image_0_label.config(image=self.sign_left)
+          self.sign_image_2_label.config(image=self.sign_left)
 
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress

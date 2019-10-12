@@ -70,6 +70,7 @@ void wait_seconds(double seconds){
 }
 
 void update_progress(package_t* pack, enum scheduler_type type){
+  //printf("%s\n", "updating");
   if(type == ROUND_ROBIN) pack->current_execution_time = get_used_time(pack) + pack->accum_execution_time;
   else pack->current_execution_time = get_used_time(pack);
 
@@ -97,6 +98,8 @@ int process_packages(void* params_ptr){
       if(get_at(*lists[params->side_id], 0)->progress >= 100){
         //pop package and go to other
         pop_front(lists[params->side_id]);
+        short sidee = control_band(&ctrl);
+        params->side_id = (sidee == 0) ? params->id:params->id+3;
         //if there are packages left
         if(get_length(*lists[params->side_id]) > 0){
           //set time of new package
@@ -106,9 +109,19 @@ int process_packages(void* params_ptr){
         }
       }
       else{
-        schedule_round_robin(lists[params->side_id], params->quantum);
+        int completed = schedule_round_robin(lists[params->side_id], params->quantum);
+        //printf("id: %d, time: %f", params->side_id,  get_used_time(get_at(*lists[params->side_id], 0)));
+        if (completed){
+          //printf("%s\n", "Complated");
+          short sidee = control_band(&ctrl);
+          params->side_id = (sidee == 0) ? params->id:params->id+3;
+          //printf("%d\n", params->side_id);
+          set_usage_time_start(get_at(*lists[params->side_id], 0));
+          schedule_round_robin(lists[params->side_id], params->quantum);
+        }
+        //printf("%d\n", get_at(*lists[params->side_id], 0)->progress);
         update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
-        write_progress(params->id, params->side_id, params->side);
+        write_progress(params->id, params->side_id, ctrl.last_side);//params->side);
       }
       wait_seconds(0.1);
     }
@@ -133,8 +146,6 @@ int process_packages(void* params_ptr){
         short sidee = control_band(&ctrl);
         params->side_id = (sidee == 0) ? params->id:params->id+3;
         printf("Side %d\n", params->side_id);
-          print_list(*lists[0]);
-          print_list(*lists[3]);
         if(get_length(*lists[params->side_id]) > 0){
           //schedule again
           if(params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
@@ -204,7 +215,7 @@ void initialize_system(){
   pkg_counters[4] = pkg_counter_4;
   pkg_counters[5] = pkg_counter_5;
 
-  init_controller(&ctrls[0], lists[0], lists[3], RANDOM_BAND);
+  init_controller(&ctrls[0], lists[0], lists[3], W_BAND);
   init_controller(&ctrls[1], lists[1], lists[4], W_BAND);
   init_controller(&ctrls[2], lists[2], lists[5], RANDOM_BAND);
 
@@ -347,7 +358,7 @@ int main() {
   params_0->id = 0;
   params_0->side_id = 0;
   params_0->quantum = QUANTUM;
-  params_0->type = FIFO;
+  params_0->type = ROUND_ROBIN;
   params_0->side = 1;
 //
   if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0)
