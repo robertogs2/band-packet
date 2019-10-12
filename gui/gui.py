@@ -61,11 +61,30 @@ class App:
     self.box_id_0_label = Label(self.root_canvas, text="Current package id:")
     self.box_id_0_label.place(x=530, y=30)
 
+    self.band_0_left_queue_label = Label(self.root_canvas, text="Id:0 R\nId:0 R\nId:0 R\nId:0 R\nId:0 R")
+    self.band_0_left_queue_label.place(x=50, y=30)
+
+    self.band_0_right_queue_label = Label(self.root_canvas, text="Id:0 R\nId:0 R\nId:0 R\nId:0 R\nId:0 R")
+    self.band_0_right_queue_label.place(x=1180, y=30)
+
+
     self.box_id_1_label = Label(self.root_canvas, text="Current package id:")
     self.box_id_1_label.place(x=530, y=280)
 
+    self.band_1_left_queue_label = Label(self.root_canvas, text="Id:0 R\nId:0 R\nId:0 R\nId:0 R\nId:0 R")
+    self.band_1_left_queue_label.place(x=50, y=280)
+
+    self.band_1_right_queue_label = Label(self.root_canvas, text="Id:0 R\nId:0 R\nId:0 R\nId:0 R\nId:0 R")
+    self.band_1_right_queue_label.place(x=1180, y=280)
+
     self.box_id_2_label = Label(self.root_canvas, text="Current package id:")
     self.box_id_2_label.place(x=530, y=560)
+
+    self.band_2_left_queue_label = Label(self.root_canvas, text="Id:0 R\nId:0 R\nId:0 R\nId:0 R\nId:0 R")
+    self.band_2_left_queue_label.place(x=50, y=560)
+
+    self.band_2_right_queue_label = Label(self.root_canvas, text="Id:0 R\nId:0 R\nId:0 R\nId:0 R\nId:0 R")
+    self.band_2_right_queue_label.place(x=1180, y=560)
 
 
     self.thread_gears_0 =  Thread(target=self.update_gears, args=())
