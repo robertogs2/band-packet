@@ -5,7 +5,7 @@
 #include <string.h> 
 #include "../include/constants.h"
 #include "../include/linked_list.h" 
-#include "../include/packageGenerator.h"
+#include "../include/package_generator.h"
 
 
 /** Read the band varibles from a .conf file
@@ -47,14 +47,20 @@ config_t get_config_aux(const char* conf_path){
 			else if(!strcmp(prev,"packageRadsP")){
                 conf.packageRadsP = atoi(current);
             }
-			else if(!strcmp(prev,"packagePrioP")){
-                conf.packagePrioP = atoi(current);
+			else if(!strcmp(prev,"packageUrgeP")){
+                conf.packageUrgeP = atoi(current);
             }
 			else if(!strcmp(prev,"packageLeftP")){
                 conf.packageLeftP = atoi(current);
             }
 			else if(!strcmp(prev,"bandParameter")){
                 conf.bandParameter = atoi(current);
+            }
+			else if(!strcmp(prev,"bandAlgorithm")){
+                conf.bandAlgorithm = atoi(current);
+            }
+			else if(!strcmp(prev,"bandScheduler")){
+                conf.bandScheduler = atoi(current);
             }
             strcpy(prev, current);
             current = strtok (NULL, "=:");
@@ -70,12 +76,12 @@ config_t get_config_aux(const char* conf_path){
  * returns: a config_t struct with the information in the file
  */
 config_t get_config (int bandId) {
-	if (bandId == W_BAND){
-		return get_config_aux(WBAND_CONF_PATH);
-	} else if (bandId == SIGN_BAND){
-		return get_config_aux(SBAND_CONF_PATH);
-	} else if (bandId == RANDOM_BAND){
-		return get_config_aux(RBAND_CONF_PATH);
+	if (bandId == TOP_BAND){
+		return get_config_aux(TOP_BAND_CONF_PATH);
+	} else if (bandId == MID_BAND){
+		return get_config_aux(MID_BAND_CONF_PATH);
+	} else if (bandId == BOTTOM_BAND){
+		return get_config_aux(BOTTOM_BAND_CONF_PATH);
 	} else {
 		exit(EXIT_FAILURE);
 	}
@@ -315,7 +321,7 @@ int randNum (int mean, int stdDev, int distro) {
 void createPackage(int* packageCounter, package_t* newPackage, int bandId){
 
 	config_t conf = get_config(bandId);
-	short pkgPriority = packageType(conf.packageRadsP,conf.packagePrioP);
+	short pkgPriority = packageType(conf.packageRadsP,conf.packageUrgeP);
 	float pkgWeight = measureWeight(pkgPriority);
 	short pkgSide = chooseSide(conf.packageLeftP);
 	double exeTime = timeOnBand(pkgWeight, conf.bandLength, conf.bandStrength);
@@ -334,7 +340,7 @@ void createPackage(int* packageCounter, package_t* newPackage, int bandId){
 	newPackage->remaining_time = exeTime;
 	*packageCounter  = *packageCounter + 1;
 		
-	printf ("Created package %d \n", newPackage->id);
+	//printf ("Created package %d \n", newPackage->id);
 }
 
 /** Prints a package contents
@@ -354,3 +360,18 @@ void checkPackage(package_t* testPackage){
 	printf("  Package has: %f s left on the band \n", testPackage->remaining_time);
 }
 
+// Debug config file reading
+void checkConfig(config_t file){
+	printf("Reading configuration file \n");
+	printf("  bandID: %d \n", file.bandID);
+	printf("  bandLength: %d m \n", file.bandLength);
+	printf("  bandDistro: %d \n", file.bandDistro);
+	printf("  bandMean: %d packages \n", file.bandMean);
+	printf("  bandStdDev: %d packages \n", file.bandStdDev);
+	printf("  packageRadsP: %d percent \n", file.packageRadsP);
+	printf("  packageUrgeP: %d percent \n", file.packageUrgeP);
+	printf("  packageLeftP: %d percent \n", file.packageLeftP);
+	printf("  bandParameter: %d \n", file.bandParameter);
+	printf("  bandAlgorithm: %d \n", file.bandAlgorithm);
+	printf("  bandScheduler: %d \n", file.bandScheduler);
+}

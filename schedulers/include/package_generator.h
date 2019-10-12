@@ -13,4 +13,7 @@ void createPackage(int* packageCounter, package_t* newPackage, int bandId);
 // prints the values of the package struct
 void checkPackage(package_t* testPackage);
 
+// prints the values of the config struct
+void checkConfig(config_t file);
+
 #endif // PACKAGE_GENERATOR

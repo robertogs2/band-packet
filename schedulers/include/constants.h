@@ -11,17 +11,17 @@ const short NORMAL = 0;		    // Send when possible
 const short LEFT_SIDE = 0;
 const short RIGHT_SIDE = 1;
 
-const short W_BAND = 0;
-const short SIGN_BAND = 1;
-const short RANDOM_BAND = 2;
+const short TOP_BAND = 0;
+const short MID_BAND = 1;
+const short BOTTOM_BAND = 2;
 
 const int CONST_DISTRO = 0;
 const int GAUSSIAN_DISTRO = 1;
 const int GAMMA_DISTRO = 2;
 
-const char* WBAND_CONF_PATH = "../config/bandW.conf";
-const char* SBAND_CONF_PATH = "../config/bandSign.conf";
-const char* RBAND_CONF_PATH = "../config/bandRand.conf";
+const char* TOP_BAND_CONF_PATH = "../config/top_band.conf";
+const char* MID_BAND_CONF_PATH = "../config/mid_band.conf";
+const char* BOTTOM_BAND_CONF_PATH = "../config/bottom_band.conf";
 const char* AUX_FILE_PATH = "../config/config.aux";
 
 #endif // CONSTANTS

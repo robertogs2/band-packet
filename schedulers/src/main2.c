@@ -14,6 +14,9 @@ int main (){
 
     // Start package generation
     config_t bandConf = get_config(bandId);
+
+    checkConfig(bandConf);
+
     int mean = bandConf.bandMean;          // mean of packages created, cte?
     int stdDev = bandConf.bandStdDev;         // variation of packages created (max 1/4 of mean), cte?
     int newPkgs = randNum(mean, stdDev, bandConf.bandDistro);
@@ -27,7 +30,8 @@ int main (){
     }
 
     // DEBUG
-    checkPackage(get_at(head, 2));
+    //checkPackage(get_at(head, 2));
+    
 
     return 0;
 }

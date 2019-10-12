@@ -1,5 +1,5 @@
 CC = gcc -o
-EXE = main
+EXE = main2
 SCHEDULERS_LIB = lib_schedulers.a
 LINKEDLIST_LIB = lib_linked_list.a
 THREADS_LIB = lib_lpthread.a

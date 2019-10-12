@@ -18,9 +18,11 @@ typedef struct config {
     int bandMean;
     int bandStdDev;
     int packageRadsP;
-    int packagePrioP;
+    int packageUrgeP;
     int packageLeftP;
     int bandParameter;
+    int bandAlgorithm;
+    int bandScheduler;
 } config_t;
 
 typedef struct package {
