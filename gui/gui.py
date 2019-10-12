@@ -28,6 +28,8 @@ class App:
     self.box_radioactive = self.load_img(self.directory + "/images/box_radioactive.png")
     self.box_urgent = self.load_img(self.directory + "/images/box_urgent.png")
     self.box_normal = self.load_img(self.directory + "/images/box_normal.png")
+    self.sign_left = self.load_img(self.directory + "/images/sign_left.png")
+    self.sign_right = self.load_img(self.directory + "/images/sign_right.png")
 
     self.gears_image_0_label = Label(self.root_canvas, image=self.gears_image)
     self.gears_image_0_label.place(x=190, y=150)
@@ -38,6 +40,14 @@ class App:
     self.gears_image_2_label = Label(self.root_canvas, image=self.gears_image)
     self.gears_image_2_label.place(x=190, y=670)
 
+    self.sign_image_0_label = Label(self.root_canvas, image=self.sign_right)
+    self.sign_image_0_label.place(x=990, y=30)
+
+    self.sign_image_1_label = Label(self.root_canvas, image=self.sign_right)
+    self.sign_image_1_label.place(x=990, y=290)
+
+    self.sign_image_2_label = Label(self.root_canvas, image=self.sign_right)
+    self.sign_image_2_label.place(x=990, y=550)
 
     self.box_image_0_label = Label(self.root_canvas, image=self.box_radioactive)
     self.box_image_0_label.place(x=190, y=90)
@@ -113,23 +123,27 @@ class App:
           pos = (pkg_progress * 900 // 100)
           if(pkg_progress > 100):
             pos = 900
+          self.sign_image_0_label.config(image=self.sign_right)
 
         elif(pkg_side == 1):
           pos = 840 - (pkg_progress * 900 // 100)
           if (pkg_progress > 100):
             pos = -60
+          self.sign_image_0_label.config(image=self.sign_left)
 
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
         self.box_image_0_label.place(x=pos + self.band_start)
 
+
+
       if(pkg_type != old_pkg_type and pkg_type != ""):
         old_pkg_type = pkg_type
-        if(pkg_type == 3):
+        if(pkg_type == 2):
           self.box_image_0_label.config(image=self.box_normal)
-        elif(pkg_type == 2):
-          self.box_image_0_label.config(image=self.box_urgent)
         elif(pkg_type == 1):
+          self.box_image_0_label.config(image=self.box_urgent)
+        elif(pkg_type == 0):
           self.box_image_0_label.config(image=self.box_radioactive)
       else:
         #do nothing if nothing has changed
@@ -154,11 +168,13 @@ class App:
           pos = (pkg_progress * 900 // 100)
           if (pkg_progress > 100):
             pos = 900
+          self.sign_image_1_label.config(image=self.sign_right)
 
         elif (pkg_side == 1):
           pos = 840 - (pkg_progress * 900 // 100)
           if (pkg_progress > 100):
             pos = -60
+          self.sign_image_0_label.config(image=self.sign_left)
 
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
@@ -166,11 +182,11 @@ class App:
 
       if (pkg_type != old_pkg_type and pkg_type != ""):
         old_pkg_type = pkg_type
-        if (pkg_type == 3):
+        if (pkg_type == 2):
           self.box_image_1_label.config(image=self.box_normal)
-        elif (pkg_type == 2):
-          self.box_image_1_label.config(image=self.box_urgent)
         elif (pkg_type == 1):
+          self.box_image_1_label.config(image=self.box_urgent)
+        elif (pkg_type == 0):
           self.box_image_1_label.config(image=self.box_radioactive)
 
       else:
@@ -196,11 +212,13 @@ class App:
           pos = (pkg_progress * 900 // 100)
           if (pkg_progress > 100):
             pos = 900
+          self.sign_image_2_label.config(image=self.sign_right)
 
         elif (pkg_side == 1):
           pos = 840 - (pkg_progress * 900 // 100)
           if (pkg_progress > 100):
             pos = -60
+          self.sign_image_0_label.config(image=self.sign_left)
 
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
@@ -208,11 +226,11 @@ class App:
 
       if (pkg_type != old_pkg_type and pkg_type != ""):
         old_pkg_type = pkg_type
-        if (pkg_type == 3):
+        if (pkg_type == 2):
           self.box_image_2_label.config(image=self.box_normal)
-        elif (pkg_type == 2):
-          self.box_image_2_label.config(image=self.box_urgent)
         elif (pkg_type == 1):
+          self.box_image_2_label.config(image=self.box_urgent)
+        elif (pkg_type == 0):
           self.box_image_2_label.config(image=self.box_radioactive)
 
       else:
