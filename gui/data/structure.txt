@@ -1,4 +1,0 @@
-PackageId
-Progress
-Type
-Side
