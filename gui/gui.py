@@ -113,6 +113,8 @@ class App:
 
       if(pkg_progress != old_pkg_progress and pkg_progress != 0):
         pos = (pkg_progress * 900 // 100)
+        if(pkg_progress > 100):
+          pos = 900
         old_pkg_progress = pkg_progress
         self.box_image_0_label.place(x=pos + self.band_start)
 
@@ -143,6 +145,8 @@ class App:
 
       if (pkg_progress != old_pkg_progress and pkg_progress != 0):
         pos = (pkg_progress * 900 // 100)
+        if (pkg_progress > 100):
+          pos = 900
         old_pkg_progress = pkg_progress
         self.box_image_1_label.place(x=pos + self.band_start)
 
@@ -174,6 +178,8 @@ class App:
 
       if (pkg_progress != old_pkg_progress and pkg_progress != 0):
         pos = (pkg_progress * 900 // 100)
+        if (pkg_progress > 100):
+          pos = 900
         old_pkg_progress = pkg_progress
         self.box_image_2_label.place(x=pos + self.band_start)
 
