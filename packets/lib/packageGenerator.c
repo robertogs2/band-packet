@@ -187,7 +187,7 @@ void testPackageType () {
  */
 double timeOnBand (float pkgWeight, int bandLen, int bandStr){
 	double mdf = pkgWeight*bandLen/bandStr;
-	double t = 0.5*mdf;//* sqrt(mdf); problems linking math.h in the makefile
+	double t = sqrt(mdf);
 	return t;
 }
 
@@ -318,12 +318,14 @@ void createPackage(int* packageCounter, package_t* newPackage, int bandId){
 	newPackage->weight = pkgWeight;
 	newPackage->side = pkgSide;
 	newPackage->priority = pkgPriority;	
-	newPackage->progress = 1;
+	newPackage->progress = 0;
+	newPackage->speed = conf.bandLength/exeTime;
 	newPackage->band = bandId;
 	newPackage->on_band = false;
+	newPackage->accum_execution_time = 0.0;
+	newPackage->current_execution_time = 0.0;
 	newPackage->total_execution_time = exeTime;
 	newPackage->remaining_time = exeTime;
-	newPackage->usage_time_start = -1;
 	*packageCounter  = *packageCounter + 1;
 		
 	printf ("Created package %d \n", newPackage->id);
@@ -339,8 +341,10 @@ void checkPackage(package_t* testPackage){
 	printf("  Package side: %d \n", testPackage->side);
 	printf("  Package piority: %d \n", testPackage->priority);
 	printf("  Package progress: %d \n", testPackage->progress);
-	printf("  Package in band: %d \n", testPackage->band);
-	printf("  Package execution time: %f \n", testPackage->total_execution_time);
+	printf("  Package moves at: %.2f m/s", testPackage->speed);
+	printf(" in band: %d \n", testPackage->band);
+	printf("  Package has been on the band for %.2f s\n", testPackage->accum_execution_time);
+	printf("  Package execution time: S%.2f \n", testPackage->total_execution_time);
 	printf("  Package has: %f s left on the band \n", testPackage->remaining_time);
 	printf("  Package started on: %ld \n", testPackage->usage_time_start);
 }
