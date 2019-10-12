@@ -20,6 +20,7 @@ typedef struct config {
     int packageRadsP;
     int packageUrgeP;
     int packageLeftP;
+    int bandQuantum;
     int bandParameter;
     int bandAlgorithm;
     int bandScheduler;

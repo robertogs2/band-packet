@@ -53,6 +53,9 @@ config_t get_config_aux(const char* conf_path){
 			else if(!strcmp(prev,"packageLeftP")){
                 conf.packageLeftP = atoi(current);
             }
+			else if(!strcmp(prev,"bandQuantum")){
+                conf.bandQuantum = atoi(current);
+            }
 			else if(!strcmp(prev,"bandParameter")){
                 conf.bandParameter = atoi(current);
             }
@@ -370,6 +373,7 @@ void checkConfig(config_t file){
 	printf("  packageRadsP: %d percent \n", file.packageRadsP);
 	printf("  packageUrgeP: %d percent \n", file.packageUrgeP);
 	printf("  packageLeftP: %d percent \n", file.packageLeftP);
+	printf("  bandQuantum: %d \n", file.bandQuantum);
 	printf("  bandParameter: %d \n", file.bandParameter);
 	printf("  bandAlgorithm: %d \n", file.bandAlgorithm);
 	printf("  bandScheduler: %d \n", file.bandScheduler);
