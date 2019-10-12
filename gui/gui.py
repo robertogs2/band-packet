@@ -23,10 +23,6 @@ class App:
     self.root_canvas = Canvas(self.root, width=1280, height=920)
     self.root_canvas.grid(row=0, column=0)
 
-    # self.background_image = self.load_img("images/background.jpg")
-    # self.background_image_label = Label(self.root_canvas, image=self.background_image, width=1280, height=920)
-    # self.background_image_label.grid(row=0,column=0)
-
     self.gears_image = self.load_img(self.directory + "/images/gears_0.png")
 
     self.box_radioactive = self.load_img(self.directory + "/images/box_radioactive.png")
@@ -103,18 +99,27 @@ class App:
     old_pkg_id = ""
     old_pkg_progress = 0
     old_pkg_type = 3
+    old_pkg_side = 0
 
     while(self.running):
-      pkg_id, pkg_progress, pkg_type = self.get_box_strings("0")
+      pkg_id, pkg_progress, pkg_type, pkg_side= self.get_box_strings("0")
 
       if(pkg_id != old_pkg_id and pkg_id != "-1"):
         self.box_id_0_label.config(text="Current package id: " + pkg_id)
         old_pkg_id = pkg_id
 
-      if(pkg_progress != old_pkg_progress and pkg_progress != 0):
-        pos = (pkg_progress * 900 // 100)
-        if(pkg_progress > 100):
-          pos = 900
+      if((pkg_progress != old_pkg_progress and pkg_progress != "") or (pkg_side != old_pkg_side and pkg_side != "")):
+        if(pkg_side == 0):
+          pos = (pkg_progress * 900 // 100)
+          if(pkg_progress > 100):
+            pos = 900
+
+        elif(pkg_side == 1):
+          pos = 840 - (pkg_progress * 900 // 100)
+          if (pkg_progress > 100):
+            pos = -60
+
+        old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
         self.box_image_0_label.place(x=pos + self.band_start)
 
@@ -135,18 +140,27 @@ class App:
     old_pkg_id = ""
     old_pkg_progress = 0
     old_pkg_type = 3
+    old_pkg_side = 0
 
     while(self.running):
-      pkg_id, pkg_progress, pkg_type = self.get_box_strings("1")
+      pkg_id, pkg_progress, pkg_type, pkg_side = self.get_box_strings("1")
 
       if (pkg_id != old_pkg_id and pkg_id != "-1"):
         self.box_id_1_label.config(text="Current package id: " + pkg_id)
         old_pkg_id = pkg_id
 
-      if (pkg_progress != old_pkg_progress and pkg_progress != 0):
-        pos = (pkg_progress * 900 // 100)
-        if (pkg_progress > 100):
-          pos = 900
+      if ((pkg_progress != old_pkg_progress and pkg_progress != "") or (pkg_side != old_pkg_side and pkg_side != "")):
+        if (pkg_side == 0):
+          pos = (pkg_progress * 900 // 100)
+          if (pkg_progress > 100):
+            pos = 900
+
+        elif (pkg_side == 1):
+          pos = 840 - (pkg_progress * 900 // 100)
+          if (pkg_progress > 100):
+            pos = -60
+
+        old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
         self.box_image_1_label.place(x=pos + self.band_start)
 
@@ -168,18 +182,27 @@ class App:
     old_pkg_id = ""
     old_pkg_progress = 0
     old_pkg_type = 3
+    old_pkg_side = 0
 
     while(self.running):
-      pkg_id, pkg_progress, pkg_type = self.get_box_strings("2")
+      pkg_id, pkg_progress, pkg_type, pkg_side = self.get_box_strings("2")
 
       if (pkg_id != old_pkg_id and pkg_id != "-1"):
         self.box_id_2_label.config(text="Current package id: " + pkg_id)
         old_pkg_id = pkg_id
 
-      if (pkg_progress != old_pkg_progress and pkg_progress != 0):
-        pos = (pkg_progress * 900 // 100)
-        if (pkg_progress > 100):
-          pos = 900
+      if ((pkg_progress != old_pkg_progress and pkg_progress != "") or (pkg_side != old_pkg_side and pkg_side != "")):
+        if (pkg_side == 0):
+          pos = (pkg_progress * 900 // 100)
+          if (pkg_progress > 100):
+            pos = 900
+
+        elif (pkg_side == 1):
+          pos = 840 - (pkg_progress * 900 // 100)
+          if (pkg_progress > 100):
+            pos = -60
+
+        old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
         self.box_image_2_label.place(x=pos + self.band_start)
 
@@ -199,14 +222,17 @@ class App:
   def get_box_strings(self, id_band):
     f = open(self.directory+"/data/band_"+id_band+".txt")
     pkg_id = "-1"
-    pkg_progress = 0
+    pkg_progress = ""
     pkg_type = ""
+    pkg_side = "" #left -> right, 1 #left <- right
+
 
     lines = f.readlines()
     if(lines != []):
       pkg_id = lines[0]
       pkg_progress = int(lines[1])
       pkg_type = int(lines[2])
-    return pkg_id, pkg_progress, pkg_type
+      pkg_side = int(lines[3])
+    return pkg_id, pkg_progress, pkg_type, pkg_side
 
 app = App()

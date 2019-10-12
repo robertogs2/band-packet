@@ -1,6 +1,6 @@
 #define _GNU_SOURCE
 
-#include "lpthread.h"
+#include "../include/lpthread.h"
 
 /* The lpthread "queue" */
 static lpthread_t lpthreadList[MAX_FIBERS];
