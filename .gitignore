@@ -68,3 +68,5 @@ dkms.conf
 # End of https://www.gitignore.io/api/c
 
 threads/bin/*
+Proyecto1 OS.pdf
+.vscode/settings.json
