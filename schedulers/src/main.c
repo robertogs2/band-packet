@@ -40,6 +40,7 @@ typedef struct ThreadParams{
   int id;
   int side_id;
   enum scheduler_type type;
+  enum control_type control;
   double quantum;
   double limit_time;
   short side;
@@ -176,6 +177,7 @@ void package_generation(){
     config_t bandConf = get_config(bandId);
     int mean = bandConf.bandMean;          // mean of packages created, cte?
     int stdDev = bandConf.bandStdDev;         // variation of packages created (max 1/4 of mean), cte?
+    printf("Mean %d, StdDev: %d", mean, stdDev);
     int newPkgs = randNum(mean, stdDev, bandConf.bandDistro);
     printf("Quantity generated: %d for band id %d: %s\n", newPkgs, bandId, side_names[counter_list]);
 
@@ -215,10 +217,6 @@ void initialize_system(){
   pkg_counters[4] = pkg_counter_4;
   pkg_counters[5] = pkg_counter_5;
 
-  init_controller(&ctrls[0], lists[0], lists[3], W_BAND);
-  init_controller(&ctrls[1], lists[1], lists[4], W_BAND);
-  init_controller(&ctrls[2], lists[2], lists[5], RANDOM_BAND);
-
 
   srand(time(NULL));
 }
@@ -228,7 +226,12 @@ int main() {
   package_generation();
 
   print_list(*lists[0]);
+  print_list(*lists[1]);
+  print_list(*lists[2]);
   print_list(*lists[3]);
+  print_list(*lists[4]);
+  print_list(*lists[5]);
+
 
 
 //
@@ -353,16 +356,26 @@ int main() {
   if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0)
     printf("\nCould not created Thread GUI\n");
 //
+
+
+  config_t bandConf = get_config(0);
   lpthread_t t_id_0;
   params_t *params_0 = malloc(sizeof(params_t));
   params_0->id = 0;
   params_0->side_id = 0;
-  params_0->quantum = QUANTUM;
-  params_0->type = ROUND_ROBIN;
+  params_0->quantum = bandConf.bandParameter;
+  params_0->type = bandConf.bandScheduler;
+  params_0->control = bandConf.bandAlgorithm;
   params_0->side = 1;
 //
+
+  init_controller(&ctrls[0], lists[0], lists[3], params_0->control);
+  init_controller(&ctrls[1], lists[1], lists[4], W_BAND);
+  init_controller(&ctrls[2], lists[2], lists[5], RANDOM_BAND);
+
   if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0)
     printf("\nCould not created Thread 0\n");
+
 
  // lpthread_t t_id_1;
  // params_t *params_1 = malloc(sizeof(params_t));
@@ -389,6 +402,7 @@ int main() {
  //push_back(&list_packages_0, &packages_0[5]);
 
   Lthread_join(t_id_0, NULL);
+
   // Lthread_join(t_id_1, NULL);
   // Lthread_join(t_id_2, NULL);
   Lthread_join(t_gui, NULL);

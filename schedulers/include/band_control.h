@@ -5,6 +5,13 @@
 #include "linked_list.h"
 #include "constants.h"
 
+enum control_type{
+  W_BAND,
+  SIGN_BAND,
+  RANDOM_BAND
+};
+
+
 typedef struct{
 	int amount_moved;
 	short last_side;
