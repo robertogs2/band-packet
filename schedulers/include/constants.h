@@ -4,9 +4,9 @@
 const int HUNDRED_PERCENT = 100;
 const int ZERO = 0;
 
-const short RADIOACTIVE = 2;	// Send in real time
+const short RADIOACTIVE = 0;	// Send in real time
 const short URGENT = 1;		    // Send asap
-const short NORMAL = 0;		    // Send when possible
+const short NORMAL = 2;		    // Send when possible
 
 const short LEFT_SIDE = 0;
 const short RIGHT_SIDE = 1;

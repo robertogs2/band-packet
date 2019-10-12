@@ -1,6 +1,8 @@
 #ifndef PACKAGE_GENERATOR
 #define PACKAGE_GENERATOR
 
+
+
 // reads band info from a conf file
 config_t get_config(int bandId);
 

@@ -4,8 +4,8 @@
 #include <time.h> 
 #include <string.h> 
 #include "../include/constants.h"
-#include "../include/linked_list.h" 
-#include "../include/packageGenerator.h"
+#include "../include/linked_list.h"
+#include "../include/package_generator.h"
 
 
 /** Read the band varibles from a .conf file
@@ -86,7 +86,7 @@ config_t get_config (int bandId) {
 int roll100(){
 	int lowRange = ZERO;	  
 	int hiRange = HUNDRED_PERCENT;
-	int percentRoll = (rand() % (hiRange - lowRange + 1)) + lowRange;
+	int percentRoll = rand() % 101;
 	return percentRoll;
 }
 
@@ -111,7 +111,8 @@ float measureWeight (int priority){
  * of the package being on the left
  */
 short chooseSide (int pLeft){
-	int sideRoll = (rand() % (100 + 1));
+
+	int sideRoll = roll100();
 	if (sideRoll > pLeft) {
 		return LEFT_SIDE;
 	} else {
@@ -148,9 +149,7 @@ short assignBand (int pSignBand, int pRandomBand){
   *   		2 : radioactive
   */
 short packageType (int pRads, int pPrime) {
-	
 	int packageType = roll100();
-	
 	if (packageType < pRads) {
 		return RADIOACTIVE;
 	} else if (packageType > HUNDRED_PERCENT-pPrime) {
@@ -333,8 +332,6 @@ void createPackage(int* packageCounter, package_t* newPackage, int bandId){
 	newPackage->total_execution_time = exeTime;
 	newPackage->remaining_time = exeTime;
 	*packageCounter  = *packageCounter + 1;
-		
-	printf ("Created package %d \n", newPackage->id);
 }
 
 /** Prints a package contents

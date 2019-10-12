@@ -9,7 +9,7 @@ void print_list(Node_t *head) {
   Node_t * current = head;
   printf("[");
   while(current != NULL){
-    printf("%d ", current->value->id);
+    printf("%d ", current->value->priority);
     current = current->next;
   }
   printf("]\n");

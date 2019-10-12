@@ -139,11 +139,11 @@ class App:
 
       if(pkg_type != old_pkg_type and pkg_type != ""):
         old_pkg_type = pkg_type
-        if(pkg_type == 3):
+        if(pkg_type == 2):
           self.box_image_0_label.config(image=self.box_normal)
-        elif(pkg_type == 2):
-          self.box_image_0_label.config(image=self.box_urgent)
         elif(pkg_type == 1):
+          self.box_image_0_label.config(image=self.box_urgent)
+        elif(pkg_type == 0):
           self.box_image_0_label.config(image=self.box_radioactive)
       else:
         #do nothing if nothing has changed
@@ -182,11 +182,11 @@ class App:
 
       if (pkg_type != old_pkg_type and pkg_type != ""):
         old_pkg_type = pkg_type
-        if (pkg_type == 3):
+        if (pkg_type == 2):
           self.box_image_1_label.config(image=self.box_normal)
-        elif (pkg_type == 2):
-          self.box_image_1_label.config(image=self.box_urgent)
         elif (pkg_type == 1):
+          self.box_image_1_label.config(image=self.box_urgent)
+        elif (pkg_type == 0):
           self.box_image_1_label.config(image=self.box_radioactive)
 
       else:
@@ -226,11 +226,11 @@ class App:
 
       if (pkg_type != old_pkg_type and pkg_type != ""):
         old_pkg_type = pkg_type
-        if (pkg_type == 3):
+        if (pkg_type == 2):
           self.box_image_2_label.config(image=self.box_normal)
-        elif (pkg_type == 2):
-          self.box_image_2_label.config(image=self.box_urgent)
         elif (pkg_type == 1):
+          self.box_image_2_label.config(image=self.box_urgent)
+        elif (pkg_type == 0):
           self.box_image_2_label.config(image=self.box_radioactive)
 
       else:
