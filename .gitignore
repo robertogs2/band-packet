@@ -6,6 +6,7 @@ schedulers/.idea/
 schedulers/.idea/.gitignore
 schedulers/bin/
 gui/.idea/
+gui/data/band_?.txt
 
 # Created by https://www.gitignore.io/api/c
 # Edit at https://www.gitignore.io/?templates=c
@@ -31,7 +32,7 @@ gui/.idea/
 
 # Libraries
 *.lib
-#*.a
+*.a
 *.la
 *.lo
 
