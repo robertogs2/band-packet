@@ -146,7 +146,7 @@ int process_packages(void* params_ptr){
         pop_front(lists[params->side_id]);
         short sidee = control_band(&ctrl);
         params->side_id = (sidee == 0) ? params->id:params->id+3;
-        printf("Side %d\n", params->side_id);
+        //printf("Side %d\n", params->side_id);
         if(get_length(*lists[params->side_id]) > 0){
           //schedule again
           if(params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
@@ -216,7 +216,6 @@ void initialize_system(){
   pkg_counters[3] = pkg_counter_3;
   pkg_counters[4] = pkg_counter_4;
   pkg_counters[5] = pkg_counter_5;
-
 
   srand(time(NULL));
 }
@@ -363,48 +362,46 @@ int main() {
   params_t *params_0 = malloc(sizeof(params_t));
   params_0->id = 0;
   params_0->side_id = 0;
-  params_0->quantum = bandConf.bandParameter;
+  params_0->quantum = bandConf.bandQuantum;
   params_0->type = bandConf.bandScheduler;
   params_0->control = bandConf.bandAlgorithm;
   params_0->side = 1;
 //
 
-  init_controller(&ctrls[0], lists[0], lists[3], params_0->control);
-  init_controller(&ctrls[1], lists[1], lists[4], W_BAND);
-  init_controller(&ctrls[2], lists[2], lists[5], RANDOM_BAND);
+  init_controller(&ctrls[0], lists[0], lists[3], params_0->control, bandConf.bandParameter);
 
   if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0)
     printf("\nCould not created Thread 0\n");
 
 
- // lpthread_t t_id_1;
- // params_t *params_1 = malloc(sizeof(params_t));
- // params_1->id = 1;
- // params_1->side_id = 1;
- // params_1->quantum = QUANTUM;
- // params_1->type = PRIORITY;
- // params_1->side = 0;
+ lpthread_t t_id_1;
+ params_t *params_1 = malloc(sizeof(params_t));
+ params_1->id = 1;
+ params_1->side_id = 1;
+ params_1->quantum = QUANTUM;
+ params_1->type = PRIORITY;
+ params_1->side = 0;
+ init_controller(&ctrls[1], lists[1], lists[4], 0, 3);
+ if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0)
+ printf("\nCould not created Thread 1\n");
 
- // if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0)
- //   printf("\nCould not created Thread 1\n");
-
- // lpthread_t t_id_2;
- // params_t *params_2 = malloc(sizeof(params_t));
- // params_2->id = 2;
- // params_2->side_id = 2;
- // params_2->quantum = QUANTUM;
- // params_2->type = FIFO;
- // params_2->side = 1;
-
- // if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0)
- //   printf("\nCould not created Thread 2\n");
+ lpthread_t t_id_2;
+ params_t *params_2 = malloc(sizeof(params_t));
+ params_2->id = 2;
+ params_2->side_id = 2;
+ params_2->quantum = QUANTUM;
+ params_2->type = FIFO;
+ params_2->side = 1;
+ init_controller(&ctrls[2], lists[2], lists[5], 0, 3);
+ if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0)
+   printf("\nCould not created Thread 2\n");
 
  //push_back(&list_packages_0, &packages_0[5]);
 
   Lthread_join(t_id_0, NULL);
 
-  // Lthread_join(t_id_1, NULL);
-  // Lthread_join(t_id_2, NULL);
+  Lthread_join(t_id_1, NULL);
+  Lthread_join(t_id_2, NULL);
   Lthread_join(t_gui, NULL);
 
   return 0;

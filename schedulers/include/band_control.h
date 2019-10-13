@@ -36,14 +36,14 @@ int get_list_size2(Node_t** list){
 	return get_length(*list);
 }
 
-void init_controller(side_controller_t* controller, Node_t** left_list, Node_t** right_list, short type){
+void init_controller(side_controller_t* controller, Node_t** left_list, Node_t** right_list, short type, int W){
 	controller->amount_moved = 0;
 	controller->last_side = 0;
 	controller->left_list = left_list;
 	controller->right_list = right_list;
 	controller->sign = 0;
 	controller->type = type;
-	controller->W = 2; //fixed
+	controller->W = W; //fixed
 }
 // 0 on left, 1 on right
 short control_band(side_controller_t* controller){
