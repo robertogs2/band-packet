@@ -1,3 +1,6 @@
+#ifndef LPTHREAD 
+#define LPTHREAD 
+
 #include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,3 +67,5 @@ int map_pid_index(pid_t id);
 int waitForAllLPthreads();
 void sync_printf(char* format,...);
 char* convert(unsigned int num, int base);
+
+#endif
