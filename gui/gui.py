@@ -13,6 +13,7 @@ class App:
     self.running = True
     self.band_start = 190
     self.band_end = 1090
+    algoritms = self.get_const_strings()
 
     self.root = Tk()
     self.root.title("Band Packet Simulation")
@@ -34,11 +35,20 @@ class App:
     self.gears_image_0_label = Label(self.root_canvas, image=self.gears_image)
     self.gears_image_0_label.place(x=190, y=150)
 
+    self.algorithms_0_label = Label(self.root_canvas, text = "Scheduler: " + algoritms[0] +"Control: " + algoritms[1], fg="yellow", justify=LEFT)
+    self.algorithms_0_label.place(x=190, y=30)
+
     self.gears_image_1_label = Label(self.root_canvas, image=self.gears_image)
     self.gears_image_1_label.place(x=190, y=410)
 
+    self.algorithms_1_label = Label(self.root_canvas, text="Scheduler: " + algoritms[2] + "Control: " + algoritms[3], fg="yellow", justify=LEFT)
+    self.algorithms_1_label.place(x=190, y=280)
+
     self.gears_image_2_label = Label(self.root_canvas, image=self.gears_image)
     self.gears_image_2_label.place(x=190, y=670)
+
+    self.algorithms_2_label = Label(self.root_canvas, text="Scheduler: " + algoritms[4] + "Control: " + algoritms[5], fg="yellow", justify=LEFT)
+    self.algorithms_2_label.place(x=190, y=560)
 
     self.sign_image_0_label = Label(self.root_canvas, image=self.sign_right)
     self.sign_image_0_label.place(x=990, y=30)
@@ -131,7 +141,7 @@ class App:
     old_pkg_side = 0
 
     while(self.running):
-      pkg_id, pkg_progress, pkg_type, pkg_side= self.get_box_strings("0")
+      pkg_id, pkg_progress, pkg_type, pkg_side, list_left, list_right = self.get_box_strings("0")
 
       if(pkg_id != old_pkg_id and pkg_id != "-1"):
         self.box_id_0_label.config(text="Current package id: " + pkg_id)
@@ -153,6 +163,8 @@ class App:
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
         self.box_image_0_label.place(x=pos + self.band_start)
+        self.band_0_left_queue_label.config(text="Next in line:\n" + list_left)
+        self.band_0_right_queue_label.config(text="Next in line:\n" +list_right)
 
 
 
@@ -176,7 +188,7 @@ class App:
     old_pkg_side = 0
 
     while(self.running):
-      pkg_id, pkg_progress, pkg_type, pkg_side = self.get_box_strings("1")
+      pkg_id, pkg_progress, pkg_type, pkg_side, list_left, list_right = self.get_box_strings("1")
 
       if (pkg_id != old_pkg_id and pkg_id != "-1"):
         self.box_id_1_label.config(text="Current package id: " + pkg_id)
@@ -198,6 +210,8 @@ class App:
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
         self.box_image_1_label.place(x=pos + self.band_start)
+        self.band_1_left_queue_label.config(text="Next in line:\n" +list_left)
+        self.band_1_right_queue_label.config(text="Next in line:\n" +list_right)
 
       if (pkg_type != old_pkg_type and pkg_type != ""):
         old_pkg_type = pkg_type
@@ -220,7 +234,7 @@ class App:
     old_pkg_side = 0
 
     while(self.running):
-      pkg_id, pkg_progress, pkg_type, pkg_side = self.get_box_strings("2")
+      pkg_id, pkg_progress, pkg_type, pkg_side, list_left, list_right = self.get_box_strings("2")
 
       if (pkg_id != old_pkg_id and pkg_id != "-1"):
         self.box_id_2_label.config(text="Current package id: " + pkg_id)
@@ -242,6 +256,8 @@ class App:
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
         self.box_image_2_label.place(x=pos + self.band_start)
+        self.band_2_left_queue_label.config(text="Next in line:\n" +list_left)
+        self.band_2_right_queue_label.config(text="Next in line:\n" +list_right)
 
       if (pkg_type != old_pkg_type and pkg_type != ""):
         old_pkg_type = pkg_type
@@ -262,7 +278,8 @@ class App:
     pkg_progress = ""
     pkg_type = ""
     pkg_side = "" #left -> right, 1 #left <- right
-
+    list_right = ""
+    list_left = ""
 
     lines = f.readlines()
     if(lines != []):
@@ -270,6 +287,13 @@ class App:
       pkg_progress = int(lines[1])
       pkg_type = int(lines[2])
       pkg_side = int(lines[3])
-    return pkg_id, pkg_progress, pkg_type, pkg_side
+      list_left = lines[4].replace(",","\n").replace(":0", ":R").replace(":1",":U").replace(":2",":N")
+      list_right = lines[5].replace(",","\n").replace(":0", ":R").replace(":1",":U").replace(":2",":N")
+    return pkg_id, pkg_progress, pkg_type, pkg_side, list_left, list_right
+
+  def get_const_strings(self):
+    f = open(self.directory+"/data/algorithms.txt")
+    lines = f.readlines()
+    return lines
 
 app = App()

@@ -79,19 +79,19 @@ short control_band(side_controller_t* controller){
 			return controller->last_side;
 		}
 		else if(type == RANDOM_BAND){
-			printf("Using RANDOM_BAND\n");
+			//printf("Using RANDOM_BAND\n");
 			int n = rand()%101;
 			
 			short dir = n > 50;
 			int new_side_length = get_list_size(dir, controller); // Side from list to give
 			
 			if(new_side_length > 0) {
-				printf("%d\n", dir);
+				//printf("%d\n", dir);
 				controller->last_side = dir; // If it has packages give on
 			}
 			else{
 				controller->last_side = flip(dir);
-				printf("%d\n", flip(dir)); // If not, give another try
+				//printf("%d\n", flip(dir)); // If not, give another try
 			}
 			return controller->last_side;
 		}

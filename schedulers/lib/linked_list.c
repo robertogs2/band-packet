@@ -5,11 +5,14 @@
 #include "../include/linked_list.h"
 
 
-void print_list(Node_t *head) {
+void print_list(Node_t *head, int property) {
   Node_t * current = head;
   printf("[");
   while(current != NULL){
-    printf("%d ", current->value->priority);
+    if(property == 0)
+      printf("%d ", current->value->id);
+    else if(property == 1)
+      printf("%d ", current->value->priority);
     current = current->next;
   }
   printf("]\n");

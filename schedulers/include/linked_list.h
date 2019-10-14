@@ -49,7 +49,7 @@ typedef struct Node{
 } Node_t;
 
 //prints the ids of the package
-void print_list(Node_t * head);
+void print_list(Node_t * head, int property);
 void push_back(Node_t ** head, package_t *value);
 void push_front(Node_t ** head, package_t *value);
 

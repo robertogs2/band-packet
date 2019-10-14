@@ -65,6 +65,8 @@ void schedule_real_time(Node_t* list_packages, double limit_time);
 
 int partition(Node_t* list_packages, int low, int high, enum scheduler_type type);
 void quick_sort(Node_t* list_packages, int low, int high, enum scheduler_type type);
+bool check_sorted(Node_t* list_packages, int property); //0 priority, 1 remaining time
+
 
 
 #endif //SCHEDULERS_SCHEDULERS_H

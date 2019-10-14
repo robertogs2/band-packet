@@ -5,11 +5,13 @@
 #include "../include/schedulers.h"
 
 void schedule_priority(Node_t *list_packages) {
-  quick_sort(list_packages, 0, get_length(list_packages)-1, PRIORITY);
+  if(!check_sorted(list_packages, 0))
+    quick_sort(list_packages, 0, get_length(list_packages)-1, PRIORITY);
 }
 
 void schedule_shortest_first(Node_t *list_packages) {
-  quick_sort(list_packages, 0, get_length(list_packages)-1, SHORTEST_FIRST);
+  if(!check_sorted(list_packages, 1))
+    quick_sort(list_packages, 0, get_length(list_packages)-1, SHORTEST_FIRST);
 }
 
 void schedule_real_time(Node_t *list_packages, double limit_time) {
@@ -88,8 +90,6 @@ int schedule_round_robin(Node_t **list_packages, double quantum) {
     push_back(list_packages, pop_front(list_packages));
     //set start time of new package
     set_usage_time_start(get_at(*list_packages,0));
-    //update list
-    print_list(*list_packages);
     return 1;
   }
   return 0;
@@ -102,6 +102,25 @@ void set_usage_time_start(package_t *pack) {
 double get_used_time(package_t *pack) {
   clock_t current_clock = clock();
   return ((double) (current_clock - pack->usage_time_start)) / CLOCKS_PER_SEC ;
+}
+
+bool check_sorted(Node_t *list_packages, int property) {
+  int length = get_length(list_packages);
+  if(length >= 2){
+    for(int i = 1; i < length; ++i){
+      if(property == 0){
+        if(get_at(list_packages, i)->priority < get_at(list_packages, i-1)->priority){
+          return false;
+        }
+      }
+      else if(property == 1) {
+        if (get_at(list_packages, i)->remaining_time < get_at(list_packages, i - 1)->remaining_time) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
 }
 
 

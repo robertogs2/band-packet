@@ -19,6 +19,11 @@
 //#define SIGN_BAND 1
 //#define RANDOM_BAND 2
 
+#define NUMBER_LISTS 6
+#define NUMBER_BANDS 3
+#define LISTS_PER_BAND 2
+#define PACKAGES_TO_SHOW 5
+
 #define CONST_DISTRO  0
 #define GAUSSIAN_DISTRO  1
 #define GAMMA_DISTRO  2

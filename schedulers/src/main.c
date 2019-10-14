@@ -7,13 +7,14 @@
 #include "../include/band_control.h"
 
 char* scheduler_names[5] = {"ROUND_ROBIN", "PRIORITY", "SHORTEST_FIRST", "FIFO", "RTOS"};
-char* side_names[2] = {"LEFT", "RIGHT"};
+char* control_names[3] = {"W", "SIGN", "RANDOM"};
+char* side_names[LISTS_PER_BAND] = {"LEFT", "RIGHT"};
 
 const double QUANTUM = 1;
-const double BAND_DISTANCE = 100;
 char command[256];
 char buffer1[256];
 char buffer2[256];
+char buffer3[256];
 
 lpthread_mutex_t mutex_file;
 
@@ -31,10 +32,10 @@ int pkg_counter_3 = 0;
 int pkg_counter_4 = 0;
 int pkg_counter_5 = 0;
 
-int pkg_counters[6];
-Node_t** lists[6];
+int pkg_counters[NUMBER_LISTS];
+Node_t** lists[NUMBER_LISTS];
 
-side_controller_t ctrls[3];
+side_controller_t ctrls[NUMBER_BANDS];
 
 typedef struct ThreadParams{
   int id;
@@ -53,10 +54,48 @@ void write_file(const char* filename, const char* msg){
   Lmutex_unlock(&mutex_file);
 }
 
+char* get_first_packages(int thread_id){
+  //structure id:priority,id:priority...
+  //initialize buffer
+  sprintf(buffer3, "%s","");
+  int lenght_l = get_length(*lists[thread_id]);
+  int lenght_r = get_length(*lists[thread_id + NUMBER_BANDS]);
+  int limit_l, limit_r, i = 1;
+  if(lenght_l >= PACKAGES_TO_SHOW + 1) limit_l = PACKAGES_TO_SHOW + 1;
+  else limit_l = lenght_l;
+  if(lenght_r >= PACKAGES_TO_SHOW + 1) limit_r = PACKAGES_TO_SHOW + 1;
+  else limit_r = lenght_r;
+
+  //left list
+  if(lenght_l > 1){
+    for(; i < limit_l; ++i){
+      sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id], i)->id,  get_at(*lists[thread_id], i)->priority);
+    }
+  }
+  for(; i < (PACKAGES_TO_SHOW + 1); ++i){
+    sprintf(buffer3, "%s-:-,", buffer3);
+  }
+  //division
+  sprintf(buffer3, "%s\n", buffer3);
+  //right list
+  i = 1;
+  if(lenght_r > 1){
+    for(; i < limit_r; ++i){
+      sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id+NUMBER_BANDS], i)->id,  get_at(*lists[thread_id+NUMBER_BANDS], i)->priority);
+    }
+  }
+  for(; i < (PACKAGES_TO_SHOW + 1); ++i){
+    sprintf(buffer3, "%s-:-,", buffer3);
+  }
+  //printf("%s\n",buffer3);
+  return buffer3;
+}
+
 void write_progress(int thread_id, int list_id, short side){
   //write progress to file
-  sprintf(buffer1, "%d\n%d\n%d\n%d", get_at(*lists[list_id], 0)->id,
-          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority, side);
+  sprintf(buffer1, "%d\n%d\n%d\n%d\n%s", get_at(*lists[list_id], 0)->id,
+          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority, side,
+          get_first_packages(thread_id));
   sprintf(buffer2, "../../gui/data/band_%d.txt", thread_id);
   write_file(buffer2, buffer1);
 }
@@ -92,7 +131,7 @@ int process_packages(void* params_ptr){
   side_controller_t ctrl = ctrls[params->id]; 
   if(params->type == ROUND_ROBIN){
     printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
-    print_list(*lists[params->side_id]);
+    print_list(*lists[params->side_id],0);
     //start algorithm
     set_usage_time_start(get_at(*lists[params->side_id], 0));
     while(get_length(*lists[params->side_id]) > 0){
@@ -106,7 +145,7 @@ int process_packages(void* params_ptr){
           //set time of new package
           set_usage_time_start(get_at(*lists[params->side_id], 0));
 
-          print_list(*lists[params->side_id]);
+          print_list(*lists[params->side_id],0);
         }
       }
       else{
@@ -134,7 +173,7 @@ int process_packages(void* params_ptr){
     else if(params->type == SHORTEST_FIRST) schedule_shortest_first(*lists[params->side_id]);
 
     printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
-    print_list(*lists[params->side_id]);
+    print_list(*lists[params->side_id],0);
 
     set_usage_time_start(get_at(*lists[params->side_id], 0));
     //while there are packages
@@ -172,7 +211,7 @@ void package_generation(){
   int bandId = 0;
   int counter_list = 0;
 
-  for(int j=0; j < 6; j++){
+  for(int j=0; j < NUMBER_LISTS; j++){
 
     config_t bandConf = get_config(bandId);
     int mean = bandConf.bandMean;          // mean of packages created, cte?
@@ -187,7 +226,7 @@ void package_generation(){
       push_back(lists[j], newPackage);
     }
 
-    if(counter_list >= 1){
+    if(counter_list >=LISTS_PER_BAND - 1){
       bandId++;
       counter_list = 0;
     }
@@ -224,13 +263,26 @@ int main() {
   initialize_system();
   package_generation();
 
-  print_list(*lists[0]);
-  print_list(*lists[1]);
-  print_list(*lists[2]);
-  print_list(*lists[3]);
-  print_list(*lists[4]);
-  print_list(*lists[5]);
+  printf("BAND 0\n");
+  print_list(*lists[0],0);
+  print_list(*lists[0],1);
 
+  print_list(*lists[3],0);
+  print_list(*lists[3],1);
+
+  printf("BAND 1\n");
+  print_list(*lists[1],0);
+  print_list(*lists[1],1);
+
+  print_list(*lists[4],0);
+  print_list(*lists[4],1);
+
+  printf("BAND 2\n");
+  print_list(*lists[2],0);
+  print_list(*lists[2],1);
+
+  print_list(*lists[5],0);
+  print_list(*lists[5],1);
 
 
 //
@@ -351,58 +403,80 @@ int main() {
 //
 //
   lpthread_t t_gui;
-//  lpthread_t t_gui;
   if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0)
     printf("\nCould not created Thread GUI\n");
-//
 
 
-  config_t bandConf = get_config(0);
+  //BAND 0
+
+  config_t band_conf_0 = get_config(0);
   lpthread_t t_id_0;
   params_t *params_0 = malloc(sizeof(params_t));
   params_0->id = 0;
   params_0->side_id = 0;
-  params_0->quantum = bandConf.bandQuantum;
-  params_0->type = bandConf.bandScheduler;
-  params_0->control = bandConf.bandAlgorithm;
+  params_0->quantum = band_conf_0.bandQuantum;
+  params_0->type = band_conf_0.bandScheduler;
+  params_0->control = band_conf_0.bandAlgorithm;
   params_0->side = 1;
 //
 
-  init_controller(&ctrls[0], lists[0], lists[3], params_0->control, bandConf.bandParameter);
+  init_controller(&ctrls[0], lists[0], lists[3], params_0->control, band_conf_0.bandParameter);
 
   if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0)
     printf("\nCould not created Thread 0\n");
 
 
- lpthread_t t_id_1;
- params_t *params_1 = malloc(sizeof(params_t));
- params_1->id = 1;
- params_1->side_id = 1;
- params_1->quantum = QUANTUM;
- params_1->type = PRIORITY;
- params_1->side = 0;
- init_controller(&ctrls[1], lists[1], lists[4], 0, 3);
- if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0)
- printf("\nCould not created Thread 1\n");
+  //BAND 1
 
- lpthread_t t_id_2;
- params_t *params_2 = malloc(sizeof(params_t));
- params_2->id = 2;
- params_2->side_id = 2;
- params_2->quantum = QUANTUM;
- params_2->type = FIFO;
- params_2->side = 1;
- init_controller(&ctrls[2], lists[2], lists[5], 0, 3);
- if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0)
+
+  config_t band_conf_1 = get_config(1);
+  lpthread_t t_id_1;
+  params_t *params_1 = malloc(sizeof(params_t));
+  params_1->id = 1;
+  params_1->side_id = 1;
+  params_1->quantum = band_conf_1.bandQuantum;
+  params_1->type = band_conf_1.bandScheduler;
+  params_1->control = band_conf_1.bandAlgorithm;
+  params_1->side = 0;
+  init_controller(&ctrls[1], lists[1], lists[4], params_1->control, band_conf_1.bandParameter);
+
+  if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0)
+  printf("\nCould not created Thread 1\n");
+
+
+  //BAND 2
+
+
+
+  config_t band_conf_2 = get_config(2);
+  lpthread_t t_id_2;
+  params_t *params_2 = malloc(sizeof(params_t));
+  params_2->id = 2;
+  params_2->side_id = 2;
+  params_2->quantum = band_conf_2.bandQuantum;
+  params_2->type = band_conf_2.bandScheduler;
+  params_2->control = band_conf_2.bandAlgorithm;
+  params_2->side = 1;
+
+  init_controller(&ctrls[2], lists[2], lists[5], params_2->control, band_conf_2.bandParameter);
+
+  if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0)
    printf("\nCould not created Thread 2\n");
 
- //push_back(&list_packages_0, &packages_0[5]);
+  //write constants to file
+  sprintf(buffer1, "%s\n%s %d\n%s\n%s %d\n%s\n%s %d",
+    scheduler_names[band_conf_0.bandScheduler], control_names[band_conf_0.bandAlgorithm], band_conf_0.bandParameter,
+    scheduler_names[band_conf_1.bandScheduler], control_names[band_conf_1.bandAlgorithm], band_conf_1.bandParameter,
+    scheduler_names[band_conf_2.bandScheduler], control_names[band_conf_2.bandAlgorithm], band_conf_2.bandParameter);
+  sprintf(buffer2, "../../gui/data/algorithms.txt");
+  write_file(buffer2, buffer1);
 
-  Lthread_join(t_id_0, NULL);
 
-  Lthread_join(t_id_1, NULL);
-  Lthread_join(t_id_2, NULL);
-  Lthread_join(t_gui, NULL);
+
+ Lthread_join(t_id_0, NULL);
+ Lthread_join(t_id_1, NULL);
+ Lthread_join(t_id_2, NULL);
+ Lthread_join(t_gui, NULL);
 
   return 0;
 }
