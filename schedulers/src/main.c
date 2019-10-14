@@ -144,6 +144,8 @@ int process_packages(void* params_ptr){
         if(get_length(*lists[params->side_id]) > 0){
           //set time of new package
           set_usage_time_start(get_at(*lists[params->side_id], 0));
+          update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
+          write_progress(params->id, params->side_id, ctrl.last_side);//params->side);
 
           print_list(*lists[params->side_id],0);
         }
