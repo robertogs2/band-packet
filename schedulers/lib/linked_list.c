@@ -13,6 +13,8 @@ void print_list(Node_t *head, int property) {
       printf("%d ", current->value->id);
     else if(property == 1)
       printf("%d ", current->value->priority);
+    else if(property == 2)
+      printf("%f ", current->value->remaining_time);
     current = current->next;
   }
   printf("]\n");
