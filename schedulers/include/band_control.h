@@ -4,6 +4,7 @@
 
 #include "linked_list.h"
 #include "constants.h"
+#include "lpthread.h"
 
 enum control_type{
   W_BAND,
@@ -36,6 +37,16 @@ int get_list_size2(Node_t** list){
 	return get_length(*list);
 }
 
+int sign_changer(void* side_controller_void){
+	side_controller_t* side_controller = (side_controller_t*) side_controller_void;
+	while(1){
+		usleep(1000*(side_controller)->W);
+		(side_controller)->sign = flip((side_controller)->sign);
+		printf("New sign: %d\n", (side_controller)->sign);
+	}
+
+}
+
 void init_controller(side_controller_t* controller, Node_t** left_list, Node_t** right_list, short type, int W){
 	controller->amount_moved = 0;
 	controller->last_side = 0;
@@ -44,6 +55,14 @@ void init_controller(side_controller_t* controller, Node_t** left_list, Node_t**
 	controller->sign = 0;
 	controller->type = type;
 	controller->W = W; //fixed
+
+	// Thread to change sign
+	if(type == SIGN_BAND){
+		printf("%p\n", controller);
+		lpthread_t* thread = (lpthread_t*) malloc(sizeof(lpthread_t));
+		Lthread_create(thread, NULL, &sign_changer, (void*) (controller));
+	}
+	
 }
 // 0 on left, 1 on right
 short control_band(side_controller_t* controller){
@@ -72,7 +91,9 @@ short control_band(side_controller_t* controller){
 			return controller->last_side;
 		}
 		else if(type == SIGN_BAND){
-			printf("Using SIGN\n");
+			//printf("Using SIGN\n");
+			//printf("ASDASD %d\n", controller->sign);
+			//printf("%p\n", controller);
 			int new_side_length = get_list_size(controller->sign, controller); // Side from list to give
 			if(new_side_length > 0) controller->last_side = controller->sign;		// If it has packages give on
 			else controller->last_side = flip(controller->sign);							// If not, give another

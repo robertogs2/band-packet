@@ -128,7 +128,7 @@ int create_gui(){
 int process_packages(void* params_ptr){
 
   params_t *params = (params_t*)params_ptr;
-  side_controller_t ctrl = ctrls[params->id]; 
+  side_controller_t* ctrl = &ctrls[params->id]; 
   if(params->type == ROUND_ROBIN){
     printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
     print_list(*lists[params->side_id],0);
@@ -138,14 +138,14 @@ int process_packages(void* params_ptr){
       if(get_at(*lists[params->side_id], 0)->progress >= 100){
         //pop package and go to other
         pop_front(lists[params->side_id]);
-        short sidee = control_band(&ctrl);
+        short sidee = control_band(ctrl);
         params->side_id = (sidee == 0) ? params->id:params->id+3;
         //if there are packages left
         if(get_length(*lists[params->side_id]) > 0){
           //set time of new package
           set_usage_time_start(get_at(*lists[params->side_id], 0));
           update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
-          write_progress(params->id, params->side_id, ctrl.last_side);//params->side);
+          write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
 
           print_list(*lists[params->side_id],0);
         }
@@ -155,7 +155,7 @@ int process_packages(void* params_ptr){
         //printf("id: %d, time: %f", params->side_id,  get_used_time(get_at(*lists[params->side_id], 0)));
         if (completed){
           //printf("%s\n", "Complated");
-          short sidee = control_band(&ctrl);
+          short sidee = control_band(ctrl);
           params->side_id = (sidee == 0) ? params->id:params->id+3;
           //printf("%d\n", params->side_id);
           set_usage_time_start(get_at(*lists[params->side_id], 0));
@@ -163,7 +163,7 @@ int process_packages(void* params_ptr){
         }
         //printf("%d\n", get_at(*lists[params->side_id], 0)->progress);
         update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
-        write_progress(params->id, params->side_id, ctrl.last_side);//params->side);
+        write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
       }
       wait_seconds(0.1);
     }
@@ -191,7 +191,7 @@ int process_packages(void* params_ptr){
         //pop that package and go for next one
 
         pop_front(lists[params->side_id]);
-        short sidee = control_band(&ctrl);
+        short sidee = control_band(ctrl);
         params->side_id = (sidee == 0) ? params->id:params->id+3;
         //printf("Side %d\n", params->side_id);
         if(get_length(*lists[params->side_id]) > 0){
@@ -206,7 +206,7 @@ int process_packages(void* params_ptr){
       else{
         //update progress
         update_progress(get_at(*lists[params->side_id], 0), params->type);
-        write_progress(params->id, params->side_id, ctrl.last_side);//params->side);
+        write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
       }
       wait_seconds(0.1);
     }
