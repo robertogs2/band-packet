@@ -5,13 +5,22 @@
 #include "../include/schedulers.h"
 
 void schedule_priority(Node_t *list_packages) {
-  if(!check_sorted(list_packages, 0))
+  if(!check_sorted(list_packages, 0)){
+    printf("Rescheduling priority\n");
     quick_sort(list_packages, 0, get_length(list_packages)-1, PRIORITY);
+    print_list(list_packages,0);
+    print_list(list_packages,1);
+  }
+
 }
 
 void schedule_shortest_first(Node_t *list_packages) {
-  if(!check_sorted(list_packages, 1))
-    quick_sort(list_packages, 0, get_length(list_packages)-1, SHORTEST_FIRST);
+  if(!check_sorted(list_packages, 1)) {
+    printf("Rescheduling shortest first\n");
+    quick_sort(list_packages, 0, get_length(list_packages) - 1, SHORTEST_FIRST);
+    print_list(list_packages,0);
+    print_list(list_packages,2);
+  }
 }
 
 void schedule_real_time(Node_t *list_packages, double limit_time) {

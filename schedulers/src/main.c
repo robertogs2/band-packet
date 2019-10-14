@@ -286,11 +286,14 @@ int main() {
   print_list(*lists[4],1);
 
   printf("BAND 2\n");
+
   print_list(*lists[2],0);
   print_list(*lists[2],1);
 
+
   print_list(*lists[5],0);
   print_list(*lists[5],1);
+
 
 
 //
