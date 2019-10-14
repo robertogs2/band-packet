@@ -420,6 +420,22 @@ int main() {
   //BAND 0
 
   config_t band_conf_0 = get_config(0);
+  config_t band_conf_1 = get_config(1);
+  config_t band_conf_2 = get_config(2);
+
+  //write constants to file
+  sprintf(buffer1, "%s\n%s %d\n%s\n%s %d\n%s\n%s %d",
+          scheduler_names[band_conf_0.bandScheduler], control_names[band_conf_0.bandAlgorithm], band_conf_0.bandParameter,
+          scheduler_names[band_conf_1.bandScheduler], control_names[band_conf_1.bandAlgorithm], band_conf_1.bandParameter,
+          scheduler_names[band_conf_2.bandScheduler], control_names[band_conf_2.bandAlgorithm], band_conf_2.bandParameter);
+  sprintf(buffer2, "../../gui/data/algorithms.txt");
+  write_file(buffer2, buffer1);
+
+
+
+
+
+
   lpthread_t t_id_0;
   params_t *params_0 = malloc(sizeof(params_t));
   params_0->id = 0;
@@ -432,13 +448,13 @@ int main() {
 
   init_controller(&ctrls[0], lists[0], lists[3], params_0->control, band_conf_0.bandParameter);
 
-  //if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0) printf("\nCould not created Thread 0\n");
+  if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0) printf("\nCould not created Thread 0\n");
 
 
   //BAND 1
 
 
-  config_t band_conf_1 = get_config(1);
+
   lpthread_t t_id_1;
   params_t *params_1 = malloc(sizeof(params_t));
   params_1->id = 1;
@@ -449,14 +465,13 @@ int main() {
   params_1->side = 0;
   init_controller(&ctrls[1], lists[1], lists[4], params_1->control, band_conf_1.bandParameter);
 
-  //if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0) printf("\nCould not created Thread 1\n");
+  if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0) printf("\nCould not created Thread 1\n");
 
 
   //BAND 2
 
 
 
-  config_t band_conf_2 = get_config(2);
   lpthread_t t_id_2;
   params_t *params_2 = malloc(sizeof(params_t));
   params_2->id = 2;
@@ -470,13 +485,6 @@ int main() {
 
   if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0) printf("\nCould not created Thread 2\n");
 
-  //write constants to file
-  sprintf(buffer1, "%s\n%s %d\n%s\n%s %d\n%s\n%s %d",
-    scheduler_names[band_conf_0.bandScheduler], control_names[band_conf_0.bandAlgorithm], band_conf_0.bandParameter,
-    scheduler_names[band_conf_1.bandScheduler], control_names[band_conf_1.bandAlgorithm], band_conf_1.bandParameter,
-    scheduler_names[band_conf_2.bandScheduler], control_names[band_conf_2.bandAlgorithm], band_conf_2.bandParameter);
-  sprintf(buffer2, "../../gui/data/algorithms.txt");
-  write_file(buffer2, buffer1);
 
 
 

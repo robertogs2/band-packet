@@ -27,7 +27,6 @@ void schedule_real_time(Node_t *list_packages, double limit_time) {
   quick_sort(list_packages, 0, get_length(list_packages)-1, RTOS);
 }
 
-
 int partition(Node_t *list_packages, int low, int high, enum scheduler_type type) {
   double pivot;
   int  i = (low - 1); //index of smaller element
