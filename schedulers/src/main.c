@@ -60,31 +60,31 @@ char* get_first_packages(int thread_id){
   sprintf(buffer3, "%s","");
   int lenght_l = get_length(*lists[thread_id]);
   int lenght_r = get_length(*lists[thread_id + NUMBER_BANDS]);
-  int limit_l, limit_r, i = 1;
-  if(lenght_l >= PACKAGES_TO_SHOW + 1) limit_l = PACKAGES_TO_SHOW + 1;
+  int limit_l, limit_r, i = 0;
+  if(lenght_l >= PACKAGES_TO_SHOW) limit_l = PACKAGES_TO_SHOW;
   else limit_l = lenght_l;
-  if(lenght_r >= PACKAGES_TO_SHOW + 1) limit_r = PACKAGES_TO_SHOW + 1;
+  if(lenght_r >= PACKAGES_TO_SHOW) limit_r = PACKAGES_TO_SHOW;
   else limit_r = lenght_r;
 
   //left list
-  if(lenght_l > 1){
+  if(lenght_l > 0){
     for(; i < limit_l; ++i){
       sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id], i)->id,  get_at(*lists[thread_id], i)->priority);
     }
   }
-  for(; i < (PACKAGES_TO_SHOW + 1); ++i){
+  for(; i < (PACKAGES_TO_SHOW); ++i){
     sprintf(buffer3, "%s-:-,", buffer3);
   }
   //division
   sprintf(buffer3, "%s\n", buffer3);
   //right list
-  i = 1;
-  if(lenght_r > 1){
+  i = 0;
+  if(lenght_r > 0){
     for(; i < limit_r; ++i){
       sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id+NUMBER_BANDS], i)->id,  get_at(*lists[thread_id+NUMBER_BANDS], i)->priority);
     }
   }
-  for(; i < (PACKAGES_TO_SHOW + 1); ++i){
+  for(; i < (PACKAGES_TO_SHOW); ++i){
     sprintf(buffer3, "%s-:-,", buffer3);
   }
   //printf("%s\n",buffer3);
@@ -171,8 +171,14 @@ int process_packages(void* params_ptr){
   //non appropriative
   else if(params->type == FIFO || params->type == PRIORITY || params->type == SHORTEST_FIRST){
     //start algorithm
-    if(params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
-    else if(params->type == SHORTEST_FIRST) schedule_shortest_first(*lists[params->side_id]);
+    if(params->type == PRIORITY) {
+      schedule_priority(*lists[params->id]);
+      schedule_priority(*lists[params->id + NUMBER_BANDS]);
+    }
+    else if(params->type == SHORTEST_FIRST){
+      schedule_shortest_first(*lists[params->id]);
+      schedule_shortest_first(*lists[params->id + NUMBER_BANDS]);
+    }
 
     printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
     print_list(*lists[params->side_id],0);
@@ -405,8 +411,7 @@ int main() {
 //
 //
   lpthread_t t_gui;
-  if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0)
-    printf("\nCould not created Thread GUI\n");
+  if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0) printf("\nCould not created Thread GUI\n");
 
 
   //BAND 0
@@ -424,8 +429,7 @@ int main() {
 
   init_controller(&ctrls[0], lists[0], lists[3], params_0->control, band_conf_0.bandParameter);
 
-  if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0)
-    printf("\nCould not created Thread 0\n");
+  //if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0) printf("\nCould not created Thread 0\n");
 
 
   //BAND 1
@@ -442,8 +446,7 @@ int main() {
   params_1->side = 0;
   init_controller(&ctrls[1], lists[1], lists[4], params_1->control, band_conf_1.bandParameter);
 
-  if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0)
-  printf("\nCould not created Thread 1\n");
+  //if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0) printf("\nCould not created Thread 1\n");
 
 
   //BAND 2
@@ -462,8 +465,7 @@ int main() {
 
   init_controller(&ctrls[2], lists[2], lists[5], params_2->control, band_conf_2.bandParameter);
 
-  if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0)
-   printf("\nCould not created Thread 2\n");
+  if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0) printf("\nCould not created Thread 2\n");
 
   //write constants to file
   sprintf(buffer1, "%s\n%s %d\n%s\n%s %d\n%s\n%s %d",
