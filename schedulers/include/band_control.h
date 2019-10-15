@@ -42,7 +42,6 @@ int sign_changer(void* side_controller_void){
 	while(1){
 		usleep(1000*(side_controller)->W);
 		(side_controller)->sign = flip((side_controller)->sign);
-		printf("New sign: %d\n", (side_controller)->sign);
 	}
 
 }

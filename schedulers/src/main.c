@@ -32,6 +32,8 @@ int pkg_counter_3 = 0;
 int pkg_counter_4 = 0;
 int pkg_counter_5 = 0;
 
+int INITIALIZED = 0;
+
 int pkg_counters[NUMBER_LISTS];
 Node_t** lists[NUMBER_LISTS];
 
@@ -76,7 +78,7 @@ char* get_first_packages(int thread_id){
     sprintf(buffer3, "%s-:-,", buffer3);
   }
   //division
-  sprintf(buffer3, "%s\n", buffer3);
+  sprintf(buffer3, "%sRemaining: %d\n", buffer3, lenght_l);
   //right list
   i = 0;
   if(lenght_r > 0){
@@ -88,6 +90,7 @@ char* get_first_packages(int thread_id){
     sprintf(buffer3, "%s-:-,", buffer3);
   }
   //printf("%s\n",buffer3);
+  sprintf(buffer3, "%sRemaining: %d", buffer3, lenght_r);
   return buffer3;
 }
 
@@ -111,7 +114,7 @@ void wait_seconds(double seconds){
 
 void update_progress(package_t* pack, enum scheduler_type type){
   //printf("%s\n", "updating");
-  if(type == ROUND_ROBIN) pack->current_execution_time = get_used_time(pack) + pack->accum_execution_time;
+  if(type == ROUND_ROBIN || type == RTOS) pack->current_execution_time = get_used_time(pack) + pack->accum_execution_time;
   else pack->current_execution_time = get_used_time(pack);
 
   pack->progress = (short) (pack->speed * pack->current_execution_time);
@@ -128,8 +131,39 @@ int create_gui(){
 int process_packages(void* params_ptr){
 
   params_t *params = (params_t*)params_ptr;
-  side_controller_t* ctrl = &ctrls[params->id]; 
-  if(params->type == ROUND_ROBIN){
+  side_controller_t* ctrl = &ctrls[params->id];
+  if(params->type == RTOS){
+    //start algorithm
+    schedule_real_time(lists[params->side_id]);
+    printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
+    print_list(*lists[params->side_id],0);
+    set_usage_time_start(get_at(*lists[params->side_id], 0));
+    while(get_length(*lists[params->side_id]) > 0){
+      if(get_at(*lists[params->side_id], 0)->progress >= 100){
+        //pop package and go to other
+        pop_front(lists[params->side_id]);
+        short sidee = control_band(ctrl);
+        params->side_id = (sidee == 0) ? params->id:params->id+3;
+        //if there are packages left
+        if(get_length(*lists[params->side_id]) > 0){
+          //set time of new package
+          set_usage_time_start(get_at(*lists[params->side_id], 0));
+          update_progress(get_at(*lists[params->side_id], 0), RTOS);
+          write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+
+          print_list(*lists[params->side_id],0);
+        }
+      }
+      else{
+        schedule_real_time(lists[params->side_id]);
+        update_progress(get_at(*lists[params->side_id], 0), RTOS);
+        write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+      }
+      wait_seconds(0.1);
+    }
+  }
+
+  else if(params->type == ROUND_ROBIN){
     printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
     print_list(*lists[params->side_id],0);
     //start algorithm
@@ -214,33 +248,34 @@ int process_packages(void* params_ptr){
   return 0;
 }
 
+int package_generation(){
+  while(true){
+    int bandId = 0;
+    int counter_list = 0;
 
-void package_generation(){
-  int bandId = 0;
-  int counter_list = 0;
+    for(int j=0; j < NUMBER_LISTS; j++){
 
-  for(int j=0; j < NUMBER_LISTS; j++){
+      config_t bandConf = get_config(bandId);
+      int mean = bandConf.bandMean;          // mean of packages created, cte?
+      int stdDev = bandConf.bandStdDev;         // variation of packages created (max 1/4 of mean), cte?
+      int newPkgs = randNum(mean, stdDev, bandConf.bandDistro);
 
-    config_t bandConf = get_config(bandId);
-    int mean = bandConf.bandMean;          // mean of packages created, cte?
-    int stdDev = bandConf.bandStdDev;         // variation of packages created (max 1/4 of mean), cte?
-    printf("Mean %d, StdDev: %d", mean, stdDev);
-    int newPkgs = randNum(mean, stdDev, bandConf.bandDistro);
-    printf("Quantity generated: %d for band id %d: %s\n", newPkgs, bandId, side_names[counter_list]);
+      for(int i=0; newPkgs>i; ++i){
+        package_t * newPackage = malloc(sizeof(package_t));
+        createPackage(&pkg_counters[j], newPackage, bandId);
+        push_back(lists[j], newPackage);
+      }
 
-    for(int i=0; newPkgs>i; ++i){
-      package_t * newPackage = malloc(sizeof(package_t));
-      createPackage(&pkg_counters[j], newPackage, bandId);
-      push_back(lists[j], newPackage);
+      if(counter_list >=LISTS_PER_BAND - 1){
+        bandId++;
+        counter_list = 0;
+      }
+      else{
+        counter_list ++;
+      }
     }
-
-    if(counter_list >=LISTS_PER_BAND - 1){
-      bandId++;
-      counter_list = 0;
-    }
-    else{
-      counter_list ++;
-    }
+    INITIALIZED = 1;
+    usleep( 5 * 1000000);
   }
 }
 
@@ -269,155 +304,42 @@ void initialize_system(){
 int main() {
 
   initialize_system();
-  package_generation();
+
+  lpthread_t t_pkg_generation;
+  if(Lthread_create(&t_pkg_generation, NULL, &package_generation, NULL)) printf("\nCould not created Thread Package Generation\n");
+
+  while(INITIALIZED == 0);
 
   printf("BAND 0\n");
   print_list(*lists[0],0);
   print_list(*lists[0],1);
+  print_list(*lists[0],2);
+
 
   print_list(*lists[3],0);
   print_list(*lists[3],1);
+  print_list(*lists[3],2);
 
-  printf("BAND 1\n");
-  print_list(*lists[1],0);
-  print_list(*lists[1],1);
+//  printf("BAND 1\n");
+//  print_list(*lists[1],0);
+//  print_list(*lists[1],1);
+//
+//  print_list(*lists[4],0);
+//  print_list(*lists[4],1);
+//
+//  printf("BAND 2\n");
+//
+//  print_list(*lists[2],0);
+//  print_list(*lists[2],1);
+//
+//
+//  print_list(*lists[5],0);
+//  print_list(*lists[5],1);
 
-  print_list(*lists[4],0);
-  print_list(*lists[4],1);
 
-  printf("BAND 2\n");
-
-  print_list(*lists[2],0);
-  print_list(*lists[2],1);
-
-
-  print_list(*lists[5],0);
-  print_list(*lists[5],1);
-
-
-
-//
-//  package_t packages_0[6];
-//  package_t packages_1[6];
-//  package_t packages_2[6];
-//
-//  for(int i = 0; i < 5; ++i){
-//    packages_0[i].id = i;
-//    packages_0[i].progress = 0;
-//    packages_0[i].accum_execution_time = 0;
-//    push_back(lists[0], &packages_0[i]);
-//    packages_1[i].id = i;
-//    packages_1[i].progress = 0;
-//    packages_1[i].accum_execution_time = 0;
-//    push_back(lists[1], &packages_1[i]);
-//    packages_2[i].id = i;
-//    packages_2[i].progress = 0;
-//    packages_2[i].accum_execution_time = 0;
-//    push_back(lists[2], &packages_2[i]);
-//  }
-//
-//  packages_0[5].id = 5;
-//
-//  print_list(*lists[0]);
-//
-//  packages_0[0].priority = 3;
-//  packages_0[1].priority = 2;
-//  packages_0[2].priority = 2;
-//  packages_0[3].priority = 1;
-//  packages_0[4].priority = 1;
-//
-//  packages_0[5].priority = 1;
-//
-//  packages_0[0].speed = 5;
-//  packages_0[1].speed = 10;
-//  packages_0[2].speed = 15;
-//  packages_0[3].speed = 20;
-//  packages_0[4].speed = 35;
-//
-//  packages_0[5].speed = 70;
-//
-//  packages_0[0].total_execution_time = BAND_DISTANCE / packages_0[0].speed;
-//  packages_0[1].total_execution_time = BAND_DISTANCE / packages_0[1].speed;
-//  packages_0[2].total_execution_time = BAND_DISTANCE / packages_0[2].speed;
-//  packages_0[3].total_execution_time = BAND_DISTANCE / packages_0[3].speed;
-//  packages_0[4].total_execution_time = BAND_DISTANCE / packages_0[4].speed;
-//  packages_0[5].total_execution_time = BAND_DISTANCE / packages_0[5].speed;
-//
-//  packages_0[0].remaining_time = packages_0[0].total_execution_time;
-//  packages_0[1].remaining_time = packages_0[1].total_execution_time;
-//  packages_0[2].remaining_time = packages_0[2].total_execution_time;
-//  packages_0[3].remaining_time = packages_0[3].total_execution_time;
-//  packages_0[4].remaining_time = packages_0[4].total_execution_time;
-//  packages_0[5].remaining_time = packages_0[5].total_execution_time;
-//
-//  packages_1[0].priority = 2;
-//  packages_1[1].priority = 2;
-//  packages_1[2].priority = 3;
-//  packages_1[3].priority = 1;
-//  packages_1[4].priority = 1;
-//
-//  packages_1[5].priority = 1;
-//
-//  packages_1[0].speed = 80;
-//  packages_1[1].speed = 90;
-//  packages_1[2].speed = 85;
-//  packages_1[3].speed = 90;
-//  packages_1[4].speed = 85;
-//
-//  packages_1[5].speed = 70;
-//
-//  packages_1[0].total_execution_time = BAND_DISTANCE / packages_1[0].speed;
-//  packages_1[1].total_execution_time = BAND_DISTANCE / packages_1[1].speed;
-//  packages_1[2].total_execution_time = BAND_DISTANCE / packages_1[2].speed;
-//  packages_1[3].total_execution_time = BAND_DISTANCE / packages_1[3].speed;
-//  packages_1[4].total_execution_time = BAND_DISTANCE / packages_1[4].speed;
-//  packages_1[5].total_execution_time = BAND_DISTANCE / packages_1[5].speed;
-//
-//  packages_1[0].remaining_time = packages_1[0].total_execution_time;
-//  packages_1[1].remaining_time = packages_1[1].total_execution_time;
-//  packages_1[2].remaining_time = packages_1[2].total_execution_time;
-//  packages_1[3].remaining_time = packages_1[3].total_execution_time;
-//  packages_1[4].remaining_time = packages_1[4].total_execution_time;
-//  packages_1[5].remaining_time = packages_1[5].total_execution_time;
-//
-//  packages_2[0].priority = 3;
-//  packages_2[1].priority = 2;
-//  packages_2[2].priority = 3;
-//  packages_2[3].priority = 1;
-//  packages_2[4].priority = 2;
-//
-//  packages_2[5].priority = 1;
-//
-//  packages_2[0].speed = 35;
-//  packages_2[1].speed = 40;
-//  packages_2[2].speed = 45;
-//  packages_2[3].speed = 50;
-//  packages_2[4].speed = 55;
-//
-//  packages_2[5].speed = 70;
-//
-//  packages_2[0].total_execution_time = BAND_DISTANCE / packages_2[0].speed;
-//  packages_2[1].total_execution_time = BAND_DISTANCE / packages_2[1].speed;
-//  packages_2[2].total_execution_time = BAND_DISTANCE / packages_2[2].speed;
-//  packages_2[3].total_execution_time = BAND_DISTANCE / packages_2[3].speed;
-//  packages_2[4].total_execution_time = BAND_DISTANCE / packages_2[4].speed;
-//  packages_2[5].total_execution_time = BAND_DISTANCE / packages_2[5].speed;
-//
-//  packages_2[0].remaining_time = packages_2[0].total_execution_time;
-//  packages_2[1].remaining_time = packages_2[1].total_execution_time;
-//  packages_2[2].remaining_time = packages_2[2].total_execution_time;
-//  packages_2[3].remaining_time = packages_2[3].total_execution_time;
-//  packages_2[4].remaining_time = packages_2[4].total_execution_time;
-//  packages_2[5].remaining_time = packages_2[5].total_execution_time;
-//
-//  //printf("Schedule by Round Robin\n");
-//
-//
   lpthread_t t_gui;
   if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0) printf("\nCould not created Thread GUI\n");
 
-
-  //BAND 0
 
   config_t band_conf_0 = get_config(0);
   config_t band_conf_1 = get_config(1);
@@ -431,10 +353,7 @@ int main() {
   sprintf(buffer2, "../../gui/data/algorithms.txt");
   write_file(buffer2, buffer1);
 
-
-
-
-
+  //BAND 0
 
   lpthread_t t_id_0;
   params_t *params_0 = malloc(sizeof(params_t));
@@ -444,7 +363,6 @@ int main() {
   params_0->type = band_conf_0.bandScheduler;
   params_0->control = band_conf_0.bandAlgorithm;
   params_0->side = 1;
-//
 
   init_controller(&ctrls[0], lists[0], lists[3], params_0->control, band_conf_0.bandParameter);
 
@@ -452,8 +370,6 @@ int main() {
 
 
   //BAND 1
-
-
 
   lpthread_t t_id_1;
   params_t *params_1 = malloc(sizeof(params_t));
@@ -470,8 +386,6 @@ int main() {
 
   //BAND 2
 
-
-
   lpthread_t t_id_2;
   params_t *params_2 = malloc(sizeof(params_t));
   params_2->id = 2;
@@ -487,10 +401,10 @@ int main() {
 
 
 
-
  Lthread_join(t_id_0, NULL);
  Lthread_join(t_id_1, NULL);
  Lthread_join(t_id_2, NULL);
+ Lthread_join(t_pkg_generation, NULL);
  Lthread_join(t_gui, NULL);
 
   return 0;

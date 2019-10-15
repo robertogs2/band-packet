@@ -184,3 +184,15 @@ void swap(Node_t *head, int index1, int index2) {
   set_at(head,index2, temp);
 
 }
+
+package_t *get_by_id(Node_t *head, int id) {
+  int length = get_length(head);
+  Node_t * current = head;
+
+  for(int i = 0; i < length; ++i){
+    if(current->value->id == id) return current->value;
+    current = current->next;
+  }
+  printf("This id is not in the list\n");
+  return NULL;
+}

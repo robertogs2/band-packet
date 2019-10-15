@@ -24,6 +24,8 @@
 #define LISTS_PER_BAND 2
 #define PACKAGES_TO_SHOW 5
 
+#define TIME_GENERATION 60
+
 #define CONST_DISTRO  0
 #define GAUSSIAN_DISTRO  1
 #define GAMMA_DISTRO  2

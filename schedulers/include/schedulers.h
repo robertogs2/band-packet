@@ -59,13 +59,16 @@ void schedule_fifo(Node_t* list_packages);
  * Schedule a list of packages using RTOS policy
  * @param list_packages
  */
-void schedule_real_time(Node_t* list_packages, double limit_time);
+int schedule_real_time(Node_t** list_packages);
 
 
 
 int partition(Node_t* list_packages, int low, int high, enum scheduler_type type);
 void quick_sort(Node_t* list_packages, int low, int high, enum scheduler_type type);
+int get_start_index(Node_t * list_packages, int element);
+int get_end_index(Node_t *list_packages, int start);
 bool check_sorted(Node_t* list_packages, int property); //0 priority, 1 remaining time
+bool check_sorted_range(Node_t *list_packages, int property, int low, int high);
 
 
 

@@ -283,12 +283,13 @@ class App:
 
     lines = f.readlines()
     if(lines != []):
-      pkg_id = lines[0]
-      pkg_progress = int(lines[1])
-      pkg_type = int(lines[2])
-      pkg_side = int(lines[3])
-      list_left = lines[4].replace(",","\n").replace(":0", ":R").replace(":1",":U").replace(":2",":N")
-      list_right = lines[5].replace(",","\n").replace(":0", ":R").replace(":1",":U").replace(":2",":N")
+      if(len(lines)>= 6):
+        pkg_id = lines[0]
+        pkg_progress = int(lines[1])
+        pkg_type = int(lines[2])
+        pkg_side = int(lines[3])
+        list_left = lines[4].replace(",","\n").replace(":0", ":R").replace(":1",":U").replace(":2",":N")
+        list_right = lines[5].replace(",","\n").replace(":0", ":R").replace(":1",":U").replace(":2",":N")
     return pkg_id, pkg_progress, pkg_type, pkg_side, list_left, list_right
 
   def get_const_strings(self):

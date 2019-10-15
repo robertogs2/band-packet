@@ -61,6 +61,10 @@ package_t * remove_at(Node_t **head, int index);
 //returns the package at a position
 package_t * get_at(Node_t *head, int index);
 
+//returns the position of a package
+package_t * get_by_id(Node_t *head, int id);
+
+
 //sets the package at a position
 package_t * set_at(Node_t *head, int index, package_t * value);
 
