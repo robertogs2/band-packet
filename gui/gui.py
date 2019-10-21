@@ -1,9 +1,10 @@
 from tkinter import *
 from PIL import ImageTk,Image
 import threading
-from threading import Thread
+from threading import Thread, RLock
 import os
 import time
+import serial
 
 class App:
 
@@ -15,6 +16,17 @@ class App:
     self.band_end = 1090
     algoritms = self.get_const_strings()
 
+
+    self.serial_port = "/dev/ttyACM0"
+    self.serial_baudrate = 115200
+    self.serial_timeout = 0.2
+    self.ardu = None
+    self.mutex= RLock()
+
+    try:
+      self.ardu=serial.Serial(self.serial_port, self.serial_baudrate, timeout=self.serial_timeout)
+    except Exception as e:
+      print(e)
     self.root = Tk()
     self.root.title("Band Packet Simulation")
     self.root.geometry("1280x920")
@@ -159,14 +171,13 @@ class App:
           if (pkg_progress > 100):
             pos = -60
           self.sign_image_0_label.config(image=self.sign_left)
-
+        self.write_hardware(0, "sign", 1-pkg_side)
+        self.write_hardware(0, "packet", 100-pkg_progress if pkg_side else pkg_progress)
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
         self.box_image_0_label.place(x=pos + self.band_start)
         self.band_0_left_queue_label.config(text="Next in line:\n" + list_left)
         self.band_0_right_queue_label.config(text="Next in line:\n" +list_right)
-
-
 
       if(pkg_type != old_pkg_type and pkg_type != ""):
         old_pkg_type = pkg_type
@@ -176,6 +187,7 @@ class App:
           self.box_image_0_label.config(image=self.box_urgent)
         elif(pkg_type == 0):
           self.box_image_0_label.config(image=self.box_radioactive)
+        self.write_hardware(0, "rgb", pkg_type)
       else:
         #do nothing if nothing has changed
         pass
@@ -206,7 +218,8 @@ class App:
           if (pkg_progress > 100):
             pos = -60
           self.sign_image_1_label.config(image=self.sign_left)
-
+        self.write_hardware(1, "sign", 1-pkg_side)
+        self.write_hardware(1, "packet", 100-pkg_progress if pkg_side else pkg_progress)
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
         self.box_image_1_label.place(x=pos + self.band_start)
@@ -221,7 +234,7 @@ class App:
           self.box_image_1_label.config(image=self.box_urgent)
         elif (pkg_type == 0):
           self.box_image_1_label.config(image=self.box_radioactive)
-
+        self.write_hardware(1, "rgb", pkg_type)
       else:
         #do nothing if nothing has changed
         pass
@@ -245,6 +258,7 @@ class App:
           pos = (pkg_progress * 900 // 100)
           if (pkg_progress > 100):
             pos = 900
+
           self.sign_image_2_label.config(image=self.sign_right)
 
         elif (pkg_side == 1):
@@ -252,7 +266,8 @@ class App:
           if (pkg_progress > 100):
             pos = -60
           self.sign_image_2_label.config(image=self.sign_left)
-
+        self.write_hardware(2, "sign", 1-pkg_side)
+        self.write_hardware(2, "packet", 100-pkg_progress if pkg_side else pkg_progress)
         old_pkg_side = pkg_side
         old_pkg_progress = pkg_progress
         self.box_image_2_label.place(x=pos + self.band_start)
@@ -267,7 +282,7 @@ class App:
           self.box_image_2_label.config(image=self.box_urgent)
         elif (pkg_type == 0):
           self.box_image_2_label.config(image=self.box_radioactive)
-
+        self.write_hardware(2, "rgb", pkg_type)
       else:
         #do nothing if nothing has changed
         pass
@@ -290,11 +305,32 @@ class App:
         pkg_side = int(lines[3])
         list_left = lines[4].replace(",","\n").replace(":0", ":R").replace(":1",":U").replace(":2",":N")
         list_right = lines[5].replace(",","\n").replace(":0", ":R").replace(":1",":U").replace(":2",":N")
+
     return pkg_id, pkg_progress, pkg_type, pkg_side, list_left, list_right
 
   def get_const_strings(self):
     f = open(self.directory+"/data/algorithms.txt")
     lines = f.readlines()
     return lines
+  def write_hardware(self, band, command, state):
+    if self.ardu is not None:
+      self.mutex.acquire()
+      line = command + ":" + str(band) + ":" + str(state)
+      print("Sennding: " + line)
+      self.ardu.write(line.encode())
+      print("Sent")
+      inp = str(self.ardu.readline())
+      print(inp)
+      # if(inp.startswith("pins", 0)):
+      #   splitted = inp.split("-")
+      #   print("Button0: " + str(splitted[0]))
+      #   print("Button1: " + str(splitted[1]))
+      #   print("Button2: " + str(splitted[2]))
+      #time.sleep(0.1)
+      self.mutex.release()
 
+    # get_box_strings()
+    # // write_hardware(band, "packet", progress);
+    # // write_hardware(band, "rgb", packet_priority);
+    # // write_hardware(band, "sign", side);
 app = App()

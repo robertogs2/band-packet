@@ -1,13 +1,18 @@
 #include "../include/linked_list.h"
 #include "../include/schedulers.h"
-#include <pthread.h>
+//#include <pthread.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <stdlib.h>
 #include "../include/lpthread.h"
 #include "../include/package_generator.h"
 #include "../include/band_control.h"
 
 char* scheduler_names[5] = {"ROUND_ROBIN", "PRIORITY", "SHORTEST_FIRST", "FIFO", "RTOS"};
 char* control_names[3] = {"W", "SIGN", "RANDOM"};
+char* serial_port="/dev/ttyAM1";
 
 typedef struct ThreadParams{
     int id;
@@ -36,9 +41,12 @@ int pkg_counters[NUMBER_LISTS];
 Node_t** lists[NUMBER_LISTS];
 side_controller_t ctrls[NUMBER_BANDS];
 
+FILE* serial_file;
+
 void write_file(const char* filename, const char* msg);
 char* get_first_packages(int thread_id);
 void write_progress(int thread_id, int list_id, short side);
+int write_hardware(int band, char* command, int state);
 void wait_seconds(double seconds);
 void update_progress(package_t* pack, enum scheduler_type type);
 int toggle_pause();
@@ -47,9 +55,12 @@ int process_packages(void* params_ptr);
 int package_generation();
 void initialize_system();
 void initialize_threads();
+int initialize_hardware();
 
-
-int main() {
+int main(int argc, char** argv) {
+  if(argc >= 2){
+    serial_port = argv[1];
+  }
   initialize_system();
   lpthread_t t_pkg_generation;
   if(Lthread_create(&t_pkg_generation, NULL, &package_generation, NULL))
@@ -59,11 +70,70 @@ int main() {
   initialize_threads();
   Lthread_join(t_pkg_generation, NULL);
   return 0;
+
 }
 
 /*
  * THREAD FUNCTIONS
  */
+
+// int initialize_hardware(){
+//   printf("Starting serial port %s\n", serial_port);
+//   serial_file = fopen(serial_port, "w");
+//   //printf("Serial fd : %d\n", serial_file);
+  
+//   // struct termios options;
+//   // tcgetattr(serial_fd, &options);
+//   // cfsetispeed(&options, B115200);
+//   // cfsetospeed(&options, B115200);
+//   // options.c_cflag |= (CLOCAL | CREAD);
+//   // tcsetattr(serial_fd, TCSANOW, &options);
+//   // //8 bit characters  
+//   // options.c_cflag &= ~CSIZE; /* Mask the character size bits */
+//   // options.c_cflag |= CS8;    /* Select 8 data bits */
+//   // //No parity
+//   // options.c_cflag &= ~PARENB;
+//   // options.c_cflag &= ~CSTOPB;
+// }
+
+// // 0 for packet, 1 for rgb, 2 for sign
+// int write_hardware(int band, char* command, int state){
+//   char buffer[30];
+//   char buffer_echo[100];
+//   sprintf(buffer, "%s:%d:%d", command, band, state);
+//   int n = strlen(buffer);
+//   if(serial_file){ // serial configured
+//     printf("%s: %d\n", "Writing to hardware", n);
+//     printf("%s\n", buffer);
+//     //write(serial_fd,buffer,n);
+//     //sprintf(buffer_echo, "echo \"%s\" > %s", buffer,serial_port);
+//     printf("Echoing %s\n", buffer_echo);
+//     //system(buffer_echo);
+//     fprintf(serial_file, buffer, n);
+//   }
+//   else{
+//     printf("%s\n", "Serial not configured");
+//   }
+// }
+
+// int read_hardware(){
+//   //sprintf(buffer, "%s:%d:%d", command, band, state);
+//   int n = 30;
+//   char buffer[30];
+//   while(true){
+//     if(serial_file){ // serial configured
+//       fread(buffer, n, 1, serial_file);
+//       if(strlen(buffer) > 0) printf("%s\n", buffer);
+//       if(strncmp(buffer, "si", 2) == 0){
+//         printf("%s\n", "found sign");
+//       }
+//     }
+//     else{
+//       printf("%s\n", "Serial not configured");
+//     }
+//   } 
+// }
+
 
 int toggle_pause(){
   char key;
@@ -394,11 +464,19 @@ char* get_first_packages(int thread_id){
 
 void write_progress(int thread_id, int list_id, short side){
   //write progress to file
-  sprintf(buffer1, "%d\n%d\n%d\n%d\n%s", get_at(*lists[list_id], 0)->id,
-          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority, side,
+  int packet_priority = get_at(*lists[list_id], 0)->priority;
+  int band_sign = side;
+  int progress = get_at(*lists[list_id], 0)->progress;
+  int packet_id = get_at(*lists[list_id], 0)->id;
+  int band = thread_id;
+  sprintf(buffer1, "%d\n%d\n%d\n%d\n%s", packet_id,
+          progress, packet_priority, side,
           get_first_packages(thread_id));
-  sprintf(buffer2, "../../gui/data/band_%d.txt", thread_id);
+  sprintf(buffer2, "../../gui/data/band_%d.txt", band);
   write_file(buffer2, buffer1);
+  // write_hardware(band, "packet", progress);
+  // write_hardware(band, "rgb", packet_priority);
+  // write_hardware(band, "sign", side);
 }
 
 void update_progress(package_t* pack, enum scheduler_type type){

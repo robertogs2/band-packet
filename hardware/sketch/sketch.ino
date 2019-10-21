@@ -29,6 +29,12 @@ int pin_sign0 = 2;
 int pin_sign1 = 4;
 int pin_sign2 = 7;
 
+// Buttons pins
+
+int pin_button0 = 8;
+int pin_button1 = 12;
+int pin_button2 = 13;
+
 String command = "";
 int i = 0;
 void setup() {
@@ -62,7 +68,7 @@ void setup() {
   
   make_clock(pin_clk0, division);
   make_clock(pin_clk1, division);
-  make_clock(pin_clk1, division);
+  make_clock(pin_clk2, division);
 
   pinMode(pin_sign0, OUTPUT);
   digitalWrite(pin_sign0, 1);
@@ -71,8 +77,12 @@ void setup() {
   pinMode(pin_sign2, OUTPUT);
   digitalWrite(pin_sign2, 1);
 
-  digitalWrite(13, HIGH);
+  pinMode(pin_button0, INPUT);
+  pinMode(pin_button1, INPUT);
+  pinMode(pin_button2, INPUT);
+
 }
+
 
 void make_clock(int pin, int times){
    int i = 0;
@@ -89,7 +99,7 @@ void split(String input, char delimiter, String* results){
   int r = 0;
   int i = 0;
   for (i=0; i < input.length(); i++){ 
-    if(input.charAt(i) == delimiter) { 
+    if(input.charAt(i) == delimiter && input.charAt(i) != '\n') { 
       results[t] = input.substring(r, i);
       r=(i+1); 
       t++; 
@@ -155,6 +165,30 @@ void sign_band(int band, int value){
   
 }
 
+void reset(){
+  analogWrite(pin_rgb0g, 255);
+  analogWrite(pin_rgb0r, 255);
+  analogWrite(pin_rgb1g, 255);
+  analogWrite(pin_rgb1r, 255);
+  analogWrite(pin_rgb2g, 255);
+  analogWrite(pin_rgb2r, 255);
+
+  digitalWrite(pin_clk0, 1);
+  digitalWrite(pin_data0, 1);
+  digitalWrite(pin_clk1, 1);
+  digitalWrite(pin_data1, 1);
+  digitalWrite(pin_clk2, 1);
+  digitalWrite(pin_data2, 1);
+  
+  make_clock(pin_clk0, division);
+  make_clock(pin_clk1, division);
+  make_clock(pin_clk1, division);
+
+  digitalWrite(pin_sign0, 1);
+  digitalWrite(pin_sign1, 1);
+  digitalWrite(pin_sign2, 1);  
+}
+
 void analize_command(String command){
   if(command.length() > 0){
     String split_string[10];
@@ -175,17 +209,28 @@ void analize_command(String command){
       int value = split_string[2].toInt();
       sign_band(band, value);
     }
+    else if(split_string[0] == "reset"){
+        reset();
+    }
   }
 }
+
+
 
 void loop() {
   // put your main code here, to run repeatedly:
   while(Serial.available()){
-       delay(3);
-       char c = Serial.read();
-       //if(c == '\n') break;
-       command += c;
+    delay(3);
+    char c = Serial.read();
+    if(c == '\n' || c == '\r') break;
+    command += c;
   }
-  analize_command(command);
+  if(command.length() > 0){
+    analize_command(command);
+    //Serial.println(command);
+    //Serial.println("pins-" + String(digitalRead(pin_button0)) + "-" + String(digitalRead(pin_button1)) + "-" + String(digitalRead(pin_button2)));
+  }
+  
   command = "";
+  
 }
