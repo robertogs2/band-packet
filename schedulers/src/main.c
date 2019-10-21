@@ -8,7 +8,6 @@
 
 char* scheduler_names[5] = {"ROUND_ROBIN", "PRIORITY", "SHORTEST_FIRST", "FIFO", "RTOS"};
 char* control_names[3] = {"W", "SIGN", "RANDOM"};
-char* side_names[LISTS_PER_BAND] = {"LEFT", "RIGHT"};
 
 typedef struct ThreadParams{
     int id;
@@ -19,113 +18,52 @@ typedef struct ThreadParams{
     bool running;
 } params_t;
 
-const double QUANTUM = 1;
 char command[256];
-char buffer1[256];
-char buffer2[256];
-char buffer3[256];
+char buffer1[256], buffer2[256], buffer3[256];
 
 lpthread_mutex_t mutex_file;
 
-params_t *params_0 = NULL;
-params_t *params_1 = NULL;
-params_t *params_2 = NULL;
+params_t *params_0 = NULL, *params_1 = NULL, *params_2 = NULL;
 
-Node_t * list_packages_0 = NULL;
-Node_t * list_packages_1 = NULL;
-Node_t * list_packages_2 = NULL;
-Node_t * list_packages_3 = NULL;
-Node_t * list_packages_4 = NULL;
-Node_t * list_packages_5 = NULL;
+Node_t * list_packages_0 = NULL, * list_packages_1 = NULL, * list_packages_2 = NULL, * list_packages_3 = NULL,
+       * list_packages_4 = NULL, * list_packages_5 = NULL;
 
-int pkg_counter_0 = 0;
-int pkg_counter_1 = 0;
-int pkg_counter_2 = 0;
-int pkg_counter_3 = 0;
-int pkg_counter_4 = 0;
-int pkg_counter_5 = 0;
+int pkg_counter_0 = 0, pkg_counter_1 = 0, pkg_counter_2 = 0, pkg_counter_3 = 0, pkg_counter_4 = 0, pkg_counter_5 = 0;
 
 int INITIALIZED = 0;
 
 int pkg_counters[NUMBER_LISTS];
 Node_t** lists[NUMBER_LISTS];
-
 side_controller_t ctrls[NUMBER_BANDS];
 
+void write_file(const char* filename, const char* msg);
+char* get_first_packages(int thread_id);
+void write_progress(int thread_id, int list_id, short side);
+void wait_seconds(double seconds);
+void update_progress(package_t* pack, enum scheduler_type type);
+int toggle_pause();
+int create_gui();
+int process_packages(void* params_ptr);
+int package_generation();
+void initialize_system();
+void initialize_threads();
 
-void write_file(const char* filename, const char* msg){
-  Lmutex_lock(&mutex_file);
-  sprintf(command, "echo '%s' > '%s'", msg, filename);
-  system(command);
-  Lmutex_unlock(&mutex_file);
+
+int main() {
+  initialize_system();
+  lpthread_t t_pkg_generation;
+  if(Lthread_create(&t_pkg_generation, NULL, &package_generation, NULL))
+    printf("\nCould not created Thread Package Generation\n");
+  //Wait for initial package generation
+  while(INITIALIZED == 0);
+  initialize_threads();
+  Lthread_join(t_pkg_generation, NULL);
+  return 0;
 }
 
-char* get_first_packages(int thread_id){
-  //structure id:priority,id:priority...
-  //initialize buffer
-  sprintf(buffer3, "%s","");
-  int lenght_l = get_length(*lists[thread_id]);
-  int lenght_r = get_length(*lists[thread_id + NUMBER_BANDS]);
-  int limit_l, limit_r, i = 0;
-  if(lenght_l >= PACKAGES_TO_SHOW) limit_l = PACKAGES_TO_SHOW;
-  else limit_l = lenght_l;
-  if(lenght_r >= PACKAGES_TO_SHOW) limit_r = PACKAGES_TO_SHOW;
-  else limit_r = lenght_r;
-
-  //left list
-  if(lenght_l > 0){
-    for(; i < limit_l; ++i){
-      sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id], i)->id,  get_at(*lists[thread_id], i)->priority);
-    }
-  }
-  for(; i < (PACKAGES_TO_SHOW); ++i){
-    sprintf(buffer3, "%s-:-,", buffer3);
-  }
-  //division
-  sprintf(buffer3, "%sRemaining: %d\n", buffer3, lenght_l);
-  //right list
-  i = 0;
-  if(lenght_r > 0){
-    for(; i < limit_r; ++i){
-      sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id+NUMBER_BANDS], i)->id,  get_at(*lists[thread_id+NUMBER_BANDS], i)->priority);
-    }
-  }
-  for(; i < (PACKAGES_TO_SHOW); ++i){
-    sprintf(buffer3, "%s-:-,", buffer3);
-  }
-  //printf("%s\n",buffer3);
-  sprintf(buffer3, "%sRemaining: %d", buffer3, lenght_r);
-  return buffer3;
-}
-
-void write_progress(int thread_id, int list_id, short side){
-  //write progress to file
-  sprintf(buffer1, "%d\n%d\n%d\n%d\n%s", get_at(*lists[list_id], 0)->id,
-          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority, side,
-          get_first_packages(thread_id));
-  sprintf(buffer2, "../../gui/data/band_%d.txt", thread_id);
-  write_file(buffer2, buffer1);
-}
-
-void wait_seconds(double seconds){
-  clock_t start;
-  start = clock();
-  double elapsed_time = 0;
-  while(elapsed_time < seconds){
-    elapsed_time = ((double) (clock() - start)) / CLOCKS_PER_SEC ;
-  }
-}
-
-void update_progress(package_t* pack, enum scheduler_type type){
-  //printf("%s\n", "updating");
-  if(type == ROUND_ROBIN || type == RTOS) pack->current_execution_time = get_used_time(pack) + pack->accum_execution_time;
-  else pack->current_execution_time = get_used_time(pack);
-
-  pack->progress = (short) (pack->speed * pack->current_execution_time);
-  pack->remaining_time = pack->total_execution_time - pack->current_execution_time;
-
-  //printf("Progress of package: %d is %d. Remaining time: %fs/%fs\n", pack->id, pack->progress, pack->remaining_time, pack->total_execution_time);
-}
+/*
+ * THREAD FUNCTIONS
+ */
 
 int toggle_pause(){
   char key;
@@ -403,18 +341,87 @@ void initialize_threads(){
   Lthread_join(t_gui, NULL);
 }
 
-int main() {
 
-  initialize_system();
+/*
+ * GUI FUNCTIONS
+ */
 
-  lpthread_t t_pkg_generation;
-  if(Lthread_create(&t_pkg_generation, NULL, &package_generation, NULL)) printf("\nCould not created Thread Package Generation\n");
 
-  //Wait for initial package generation
-  while(INITIALIZED == 0);
+void write_file(const char* filename, const char* msg){
+  Lmutex_lock(&mutex_file);
+  sprintf(command, "echo '%s' > '%s'", msg, filename);
+  system(command);
+  Lmutex_unlock(&mutex_file);
+}
 
-  initialize_threads();
+char* get_first_packages(int thread_id){
+  //structure id:priority,id:priority...
+  //initialize buffer
+  sprintf(buffer3, "%s","");
+  int lenght_l = get_length(*lists[thread_id]);
+  int lenght_r = get_length(*lists[thread_id + NUMBER_BANDS]);
+  int limit_l, limit_r, i = 0;
+  if(lenght_l >= PACKAGES_TO_SHOW) limit_l = PACKAGES_TO_SHOW;
+  else limit_l = lenght_l;
+  if(lenght_r >= PACKAGES_TO_SHOW) limit_r = PACKAGES_TO_SHOW;
+  else limit_r = lenght_r;
 
-  Lthread_join(t_pkg_generation, NULL);
-  return 0;
+  //left list
+  if(lenght_l > 0){
+    for(; i < limit_l; ++i){
+      sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id], i)->id,  get_at(*lists[thread_id], i)->priority);
+    }
+  }
+  for(; i < (PACKAGES_TO_SHOW); ++i){
+    sprintf(buffer3, "%s-:-,", buffer3);
+  }
+  //division
+  sprintf(buffer3, "%sRemaining: %d\n", buffer3, lenght_l);
+  //right list
+  i = 0;
+  if(lenght_r > 0){
+    for(; i < limit_r; ++i){
+      sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id+NUMBER_BANDS], i)->id,  get_at(*lists[thread_id+NUMBER_BANDS], i)->priority);
+    }
+  }
+  for(; i < (PACKAGES_TO_SHOW); ++i){
+    sprintf(buffer3, "%s-:-,", buffer3);
+  }
+  //printf("%s\n",buffer3);
+  sprintf(buffer3, "%sRemaining: %d", buffer3, lenght_r);
+  return buffer3;
+}
+
+void write_progress(int thread_id, int list_id, short side){
+  //write progress to file
+  sprintf(buffer1, "%d\n%d\n%d\n%d\n%s", get_at(*lists[list_id], 0)->id,
+          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority, side,
+          get_first_packages(thread_id));
+  sprintf(buffer2, "../../gui/data/band_%d.txt", thread_id);
+  write_file(buffer2, buffer1);
+}
+
+void update_progress(package_t* pack, enum scheduler_type type){
+  //printf("%s\n", "updating");
+  if(type == ROUND_ROBIN || type == RTOS) pack->current_execution_time = get_used_time(pack) + pack->accum_execution_time;
+  else pack->current_execution_time = get_used_time(pack);
+
+  pack->progress = (short) (pack->speed * pack->current_execution_time);
+  pack->remaining_time = pack->total_execution_time - pack->current_execution_time;
+
+  //printf("Progress of package: %d is %d. Remaining time: %fs/%fs\n", pack->id, pack->progress, pack->remaining_time, pack->total_execution_time);
+}
+
+
+/*
+ * AUX FUNCTIONS
+ */
+
+void wait_seconds(double seconds){
+  clock_t start;
+  start = clock();
+  double elapsed_time = 0;
+  while(elapsed_time < seconds){
+    elapsed_time = ((double) (clock() - start)) / CLOCKS_PER_SEC ;
+  }
 }
