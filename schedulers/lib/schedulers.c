@@ -34,7 +34,7 @@ int get_end_index(Node_t *list_packages, int start){
 
 void schedule_priority(Node_t *list_packages) {
   if(!check_sorted(list_packages, 0)){
-    printf("Rescheduling priority\n");
+   // printf("Rescheduling priority\n");
     quick_sort(list_packages, 0, get_length(list_packages)-1, PRIORITY);
 //    print_list(list_packages,0);
 //    print_list(list_packages,1);
@@ -44,7 +44,7 @@ void schedule_priority(Node_t *list_packages) {
 
 void schedule_shortest_first(Node_t *list_packages) {
   if(!check_sorted(list_packages, 1)) {
-    printf("Rescheduling shortest first\n");
+    //printf("Rescheduling shortest first\n");
     quick_sort(list_packages, 0, get_length(list_packages) - 1, SHORTEST_FIRST);
 //    print_list(list_packages,0);
 //    print_list(list_packages,2);
@@ -60,7 +60,7 @@ int schedule_real_time(Node_t **list_packages) {
   sorted_priority = check_sorted(*list_packages, 0); //1 if it is sorted in priority order
 
   if(!sorted_priority){
-    printf("Rescheduling priority for RTOS\n");
+   // printf("Rescheduling priority for RTOS\n");
     //To give priority to hard time
     quick_sort(*list_packages, 0, get_length(*list_packages)-1, PRIORITY);
     if(get_at(*list_packages, 0)->id != org_pkg_id){
@@ -94,7 +94,7 @@ int schedule_real_time(Node_t **list_packages) {
   //needs time sorting and priority sorting was ok
   if(!sorted_time_0 || !sorted_time_1 || !sorted_time_2){
 
-    printf("Rescheduling time for RTOS\n");
+    //printf("Rescheduling time for RTOS\n");
     if(!sorted_time_0) quick_sort(*list_packages, start_0, end_0-1, RTOS);
     if(!sorted_time_1) quick_sort(*list_packages, start_1, end_1-1, RTOS);
     if(!sorted_time_2) quick_sort(*list_packages, start_2, end_2-1, RTOS);
@@ -108,7 +108,7 @@ int schedule_real_time(Node_t **list_packages) {
     }
   }
   if(changed){
-    printf("Setting time for package: %d\n", get_at(*list_packages,0)->id);
+    //printf("Setting time for package: %d\n", get_at(*list_packages,0)->id);
     //set start time of new package
     set_usage_time_start(get_at(*list_packages,0));
   }

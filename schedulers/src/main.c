@@ -8,119 +8,81 @@
 
 char* scheduler_names[5] = {"ROUND_ROBIN", "PRIORITY", "SHORTEST_FIRST", "FIFO", "RTOS"};
 char* control_names[3] = {"W", "SIGN", "RANDOM"};
-char* side_names[LISTS_PER_BAND] = {"LEFT", "RIGHT"};
 
-const double QUANTUM = 1;
+typedef struct ThreadParams{
+    int id;
+    int side_id;
+    enum scheduler_type type;
+    enum control_type control;
+    double quantum;
+    bool running;
+} params_t;
+
 char command[256];
-char buffer1[256];
-char buffer2[256];
-char buffer3[256];
+char buffer1[256], buffer2[256], buffer3[256];
 
 lpthread_mutex_t mutex_file;
 
-Node_t * list_packages_0 = NULL;
-Node_t * list_packages_1 = NULL;
-Node_t * list_packages_2 = NULL;
-Node_t * list_packages_3 = NULL;
-Node_t * list_packages_4 = NULL;
-Node_t * list_packages_5 = NULL;
+params_t *params_0 = NULL, *params_1 = NULL, *params_2 = NULL;
 
-int pkg_counter_0 = 0;
-int pkg_counter_1 = 0;
-int pkg_counter_2 = 0;
-int pkg_counter_3 = 0;
-int pkg_counter_4 = 0;
-int pkg_counter_5 = 0;
+Node_t * list_packages_0 = NULL, * list_packages_1 = NULL, * list_packages_2 = NULL, * list_packages_3 = NULL,
+       * list_packages_4 = NULL, * list_packages_5 = NULL;
+
+int pkg_counter_0 = 0, pkg_counter_1 = 0, pkg_counter_2 = 0, pkg_counter_3 = 0, pkg_counter_4 = 0, pkg_counter_5 = 0;
 
 int INITIALIZED = 0;
 
 int pkg_counters[NUMBER_LISTS];
 Node_t** lists[NUMBER_LISTS];
-
 side_controller_t ctrls[NUMBER_BANDS];
 
-typedef struct ThreadParams{
-  int id;
-  int side_id;
-  enum scheduler_type type;
-  enum control_type control;
-  double quantum;
-  double limit_time;
-  short side;
-} params_t;
+void write_file(const char* filename, const char* msg);
+char* get_first_packages(int thread_id);
+void write_progress(int thread_id, int list_id, short side);
+void wait_seconds(double seconds);
+void update_progress(package_t* pack, enum scheduler_type type);
+int toggle_pause();
+int create_gui();
+int process_packages(void* params_ptr);
+int package_generation();
+void initialize_system();
+void initialize_threads();
 
-void write_file(const char* filename, const char* msg){
-  Lmutex_lock(&mutex_file);
-  sprintf(command, "echo '%s' > '%s'", msg, filename);
-  system(command);
-  Lmutex_unlock(&mutex_file);
+
+int main() {
+  initialize_system();
+  lpthread_t t_pkg_generation;
+  if(Lthread_create(&t_pkg_generation, NULL, &package_generation, NULL))
+    printf("\nCould not created Thread Package Generation\n");
+  //Wait for initial package generation
+  while(INITIALIZED == 0);
+  initialize_threads();
+  Lthread_join(t_pkg_generation, NULL);
+  return 0;
 }
 
-char* get_first_packages(int thread_id){
-  //structure id:priority,id:priority...
-  //initialize buffer
-  sprintf(buffer3, "%s","");
-  int lenght_l = get_length(*lists[thread_id]);
-  int lenght_r = get_length(*lists[thread_id + NUMBER_BANDS]);
-  int limit_l, limit_r, i = 0;
-  if(lenght_l >= PACKAGES_TO_SHOW) limit_l = PACKAGES_TO_SHOW;
-  else limit_l = lenght_l;
-  if(lenght_r >= PACKAGES_TO_SHOW) limit_r = PACKAGES_TO_SHOW;
-  else limit_r = lenght_r;
+/*
+ * THREAD FUNCTIONS
+ */
 
-  //left list
-  if(lenght_l > 0){
-    for(; i < limit_l; ++i){
-      sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id], i)->id,  get_at(*lists[thread_id], i)->priority);
+int toggle_pause(){
+  char key;
+  //enable pause
+  while(true){
+    scanf("%c", &key);
+    if(strcmp(&key, "0") == 0){
+      printf("Toggle band 0");
+      params_0->running = !params_0->running;
+    }
+    else if(strcmp(&key, "1") == 0){
+      printf("Toggle band 1");
+      params_1->running = !params_1->running;
+    }
+    else if(strcmp(&key, "2") == 0){
+      printf("Toggle band 2");
+      params_2->running = !params_2->running;
     }
   }
-  for(; i < (PACKAGES_TO_SHOW); ++i){
-    sprintf(buffer3, "%s-:-,", buffer3);
-  }
-  //division
-  sprintf(buffer3, "%sRemaining: %d\n", buffer3, lenght_l);
-  //right list
-  i = 0;
-  if(lenght_r > 0){
-    for(; i < limit_r; ++i){
-      sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id+NUMBER_BANDS], i)->id,  get_at(*lists[thread_id+NUMBER_BANDS], i)->priority);
-    }
-  }
-  for(; i < (PACKAGES_TO_SHOW); ++i){
-    sprintf(buffer3, "%s-:-,", buffer3);
-  }
-  //printf("%s\n",buffer3);
-  sprintf(buffer3, "%sRemaining: %d", buffer3, lenght_r);
-  return buffer3;
-}
-
-void write_progress(int thread_id, int list_id, short side){
-  //write progress to file
-  sprintf(buffer1, "%d\n%d\n%d\n%d\n%s", get_at(*lists[list_id], 0)->id,
-          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority, side,
-          get_first_packages(thread_id));
-  sprintf(buffer2, "../../gui/data/band_%d.txt", thread_id);
-  write_file(buffer2, buffer1);
-}
-
-void wait_seconds(double seconds){
-  clock_t start;
-  start = clock();
-  double elapsed_time = 0;
-  while(elapsed_time < seconds){
-    elapsed_time = ((double) (clock() - start)) / CLOCKS_PER_SEC ;
-  }
-}
-
-void update_progress(package_t* pack, enum scheduler_type type){
-  //printf("%s\n", "updating");
-  if(type == ROUND_ROBIN || type == RTOS) pack->current_execution_time = get_used_time(pack) + pack->accum_execution_time;
-  else pack->current_execution_time = get_used_time(pack);
-
-  pack->progress = (short) (pack->speed * pack->current_execution_time);
-  pack->remaining_time = pack->total_execution_time - pack->current_execution_time;
-
-  //printf("Progress of package: %d is %d. Remaining time: %fs/%fs\n", pack->id, pack->progress, pack->remaining_time, pack->total_execution_time);
 }
 
 int create_gui(){
@@ -138,28 +100,32 @@ int process_packages(void* params_ptr){
     printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
     print_list(*lists[params->side_id],0);
     set_usage_time_start(get_at(*lists[params->side_id], 0));
-    while(get_length(*lists[params->side_id]) > 0){
-      if(get_at(*lists[params->side_id], 0)->progress >= 100){
-        //pop package and go to other
-        pop_front(lists[params->side_id]);
-        short sidee = control_band(ctrl);
-        params->side_id = (sidee == 0) ? params->id:params->id+3;
-        //if there are packages left
-        if(get_length(*lists[params->side_id]) > 0){
-          //set time of new package
-          set_usage_time_start(get_at(*lists[params->side_id], 0));
+    while(get_length(*lists[params->side_id]) > 0) {
+      if (params->running) {
+        if (get_at(*lists[params->side_id], 0)->progress >= 100) {
+          //pop package and go to other
+          pop_front(lists[params->side_id]);
+          short sidee = control_band(ctrl);
+          params->side_id = (sidee == 0) ? params->id : params->id + 3;
+          //if there are packages left
+          if (get_length(*lists[params->side_id]) > 0) {
+            //set time of new package
+            set_usage_time_start(get_at(*lists[params->side_id], 0));
+            update_progress(get_at(*lists[params->side_id], 0), RTOS);
+            write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+
+            //print_list(*lists[params->side_id], 0);
+          }
+        } else {
+          schedule_real_time(lists[params->side_id]);
           update_progress(get_at(*lists[params->side_id], 0), RTOS);
           write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
-
-          print_list(*lists[params->side_id],0);
         }
+        wait_seconds(0.1);
       }
       else{
-        schedule_real_time(lists[params->side_id]);
-        update_progress(get_at(*lists[params->side_id], 0), RTOS);
-        write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+        usleep(0.1 * 1000000);
       }
-      wait_seconds(0.1);
     }
   }
 
@@ -169,37 +135,42 @@ int process_packages(void* params_ptr){
     //start algorithm
     set_usage_time_start(get_at(*lists[params->side_id], 0));
     while(get_length(*lists[params->side_id]) > 0){
-      if(get_at(*lists[params->side_id], 0)->progress >= 100){
-        //pop package and go to other
-        pop_front(lists[params->side_id]);
-        short sidee = control_band(ctrl);
-        params->side_id = (sidee == 0) ? params->id:params->id+3;
-        //if there are packages left
-        if(get_length(*lists[params->side_id]) > 0){
-          //set time of new package
-          set_usage_time_start(get_at(*lists[params->side_id], 0));
-          update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
-          write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
-
-          print_list(*lists[params->side_id],0);
-        }
-      }
-      else{
-        int completed = schedule_round_robin(lists[params->side_id], params->quantum);
-        //printf("id: %d, time: %f", params->side_id,  get_used_time(get_at(*lists[params->side_id], 0)));
-        if (completed){
-          //printf("%s\n", "Complated");
+      if(params->running){
+        if(get_at(*lists[params->side_id], 0)->progress >= 100){
+          //pop package and go to other
+          pop_front(lists[params->side_id]);
           short sidee = control_band(ctrl);
           params->side_id = (sidee == 0) ? params->id:params->id+3;
-          //printf("%d\n", params->side_id);
-          set_usage_time_start(get_at(*lists[params->side_id], 0));
-          schedule_round_robin(lists[params->side_id], params->quantum);
+          //if there are packages left
+          if(get_length(*lists[params->side_id]) > 0){
+            //set time of new package
+            set_usage_time_start(get_at(*lists[params->side_id], 0));
+            update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
+            write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+
+            //print_list(*lists[params->side_id],0);
+          }
         }
-        //printf("%d\n", get_at(*lists[params->side_id], 0)->progress);
-        update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
-        write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+        else{
+          int completed = schedule_round_robin(lists[params->side_id], params->quantum);
+          //printf("id: %d, time: %f", params->side_id,  get_used_time(get_at(*lists[params->side_id], 0)));
+          if (completed){
+            //printf("%s\n", "Complated");
+            short sidee = control_band(ctrl);
+            params->side_id = (sidee == 0) ? params->id:params->id+3;
+            //printf("%d\n", params->side_id);
+            set_usage_time_start(get_at(*lists[params->side_id], 0));
+            schedule_round_robin(lists[params->side_id], params->quantum);
+          }
+          //printf("%d\n", get_at(*lists[params->side_id], 0)->progress);
+          update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
+          write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+        }
+        wait_seconds(0.1);
       }
-      wait_seconds(0.1);
+      else{
+        usleep(0.1 * 1000000);
+      }
     }
   }
   //non appropriative
@@ -219,30 +190,34 @@ int process_packages(void* params_ptr){
 
     set_usage_time_start(get_at(*lists[params->side_id], 0));
     //while there are packages
-    while(get_length(*lists[params->side_id]) > 0){
-      //package is complete
-      if(get_at(*lists[params->side_id], 0)->progress >= 100) {
-        //pop that package and go for next one
+    while(get_length(*lists[params->side_id]) > 0) {
+      if (params->running) {
+        //package is complete
+        if (get_at(*lists[params->side_id], 0)->progress >= 100) {
+          //pop that package and go for next one
 
-        pop_front(lists[params->side_id]);
-        short sidee = control_band(ctrl);
-        params->side_id = (sidee == 0) ? params->id:params->id+3;
-        //printf("Side %d\n", params->side_id);
-        if(get_length(*lists[params->side_id]) > 0){
-          //schedule again
-          if(params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
-          else if(params->type == SHORTEST_FIRST) schedule_shortest_first(*lists[params->side_id]);
-          //if fifo is is not necessary to reschedule
-          //set time of new package
-          set_usage_time_start(get_at(*lists[params->side_id], 0));
+          pop_front(lists[params->side_id]);
+          short sidee = control_band(ctrl);
+          params->side_id = (sidee == 0) ? params->id : params->id + 3;
+          //printf("Side %d\n", params->side_id);
+          if (get_length(*lists[params->side_id]) > 0) {
+            //schedule again
+            if (params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
+            else if (params->type == SHORTEST_FIRST) schedule_shortest_first(*lists[params->side_id]);
+            //if fifo is is not necessary to reschedule
+            //set time of new package
+            set_usage_time_start(get_at(*lists[params->side_id], 0));
+          }
+        } else {
+          //update progress
+          update_progress(get_at(*lists[params->side_id], 0), params->type);
+          write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
         }
+        wait_seconds(0.1);
       }
       else{
-        //update progress
-        update_progress(get_at(*lists[params->side_id], 0), params->type);
-        write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+        usleep(0.1 * 1000000);
       }
-      wait_seconds(0.1);
     }
   }
   return 0;
@@ -300,46 +275,6 @@ void initialize_system(){
   pkg_counters[5] = pkg_counter_5;
 
   srand(time(NULL));
-}
-int main() {
-
-  initialize_system();
-
-  lpthread_t t_pkg_generation;
-  if(Lthread_create(&t_pkg_generation, NULL, &package_generation, NULL)) printf("\nCould not created Thread Package Generation\n");
-
-  while(INITIALIZED == 0);
-
-  printf("BAND 0\n");
-  print_list(*lists[0],0);
-  print_list(*lists[0],1);
-  print_list(*lists[0],2);
-
-
-  print_list(*lists[3],0);
-  print_list(*lists[3],1);
-  print_list(*lists[3],2);
-
-//  printf("BAND 1\n");
-//  print_list(*lists[1],0);
-//  print_list(*lists[1],1);
-//
-//  print_list(*lists[4],0);
-//  print_list(*lists[4],1);
-//
-//  printf("BAND 2\n");
-//
-//  print_list(*lists[2],0);
-//  print_list(*lists[2],1);
-//
-//
-//  print_list(*lists[5],0);
-//  print_list(*lists[5],1);
-
-
-  lpthread_t t_gui;
-  if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0) printf("\nCould not created Thread GUI\n");
-
 
   config_t band_conf_0 = get_config(0);
   config_t band_conf_1 = get_config(1);
@@ -355,57 +290,138 @@ int main() {
 
   //BAND 0
 
-  lpthread_t t_id_0;
-  params_t *params_0 = malloc(sizeof(params_t));
+  params_0 = malloc(sizeof(params_t));
   params_0->id = 0;
   params_0->side_id = 0;
   params_0->quantum = band_conf_0.bandQuantum;
   params_0->type = band_conf_0.bandScheduler;
   params_0->control = band_conf_0.bandAlgorithm;
-  params_0->side = 1;
-
+  params_0->running = true;
   init_controller(&ctrls[0], lists[0], lists[3], params_0->control, band_conf_0.bandParameter);
 
-  if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0) printf("\nCould not created Thread 0\n");
-
-
   //BAND 1
-
-  lpthread_t t_id_1;
-  params_t *params_1 = malloc(sizeof(params_t));
+  params_1 = malloc(sizeof(params_t));
   params_1->id = 1;
   params_1->side_id = 1;
   params_1->quantum = band_conf_1.bandQuantum;
   params_1->type = band_conf_1.bandScheduler;
   params_1->control = band_conf_1.bandAlgorithm;
-  params_1->side = 0;
+  params_1->running = true;
   init_controller(&ctrls[1], lists[1], lists[4], params_1->control, band_conf_1.bandParameter);
 
-  if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0) printf("\nCould not created Thread 1\n");
-
-
-  //BAND 2
-
-  lpthread_t t_id_2;
-  params_t *params_2 = malloc(sizeof(params_t));
+  params_2 = malloc(sizeof(params_t));
   params_2->id = 2;
   params_2->side_id = 2;
   params_2->quantum = band_conf_2.bandQuantum;
   params_2->type = band_conf_2.bandScheduler;
   params_2->control = band_conf_2.bandAlgorithm;
-  params_2->side = 1;
+  params_2->running = true;
 
   init_controller(&ctrls[2], lists[2], lists[5], params_2->control, band_conf_2.bandParameter);
+}
 
-  if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0) printf("\nCould not created Thread 2\n");
+void initialize_threads(){
+
+  lpthread_t t_gui;
+  if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0) printf("\nCould not created Thread GUI\n");
+  lpthread_t t_pause;
+  if(Lthread_create(&t_pause, NULL, &toggle_pause, NULL) != 0) printf("\nCould not created Thread Pause\n");
+  lpthread_t t_id_0;
+  if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0) printf("\nCould not created Thread 0\n");
+  lpthread_t t_id_1;
+  if(Lthread_create(&t_id_1, NULL, &process_packages, (void *) params_1) != 0) printf("\nCould not created Thread 1\n");
+  lpthread_t t_id_2;
+   if(Lthread_create(&t_id_2, NULL, &process_packages, (void *) params_2) != 0) printf("\nCould not created Thread 2\n");
 
 
 
- Lthread_join(t_id_0, NULL);
- Lthread_join(t_id_1, NULL);
- Lthread_join(t_id_2, NULL);
- Lthread_join(t_pkg_generation, NULL);
- Lthread_join(t_gui, NULL);
+  Lthread_join(t_id_0, NULL);
+  Lthread_join(t_id_1, NULL);
+  Lthread_join(t_id_2, NULL);
+  Lthread_join(t_gui, NULL);
+}
 
-  return 0;
+
+/*
+ * GUI FUNCTIONS
+ */
+
+
+void write_file(const char* filename, const char* msg){
+  Lmutex_lock(&mutex_file);
+  sprintf(command, "echo '%s' > '%s'", msg, filename);
+  system(command);
+  Lmutex_unlock(&mutex_file);
+}
+
+char* get_first_packages(int thread_id){
+  //structure id:priority,id:priority...
+  //initialize buffer
+  sprintf(buffer3, "%s","");
+  int lenght_l = get_length(*lists[thread_id]);
+  int lenght_r = get_length(*lists[thread_id + NUMBER_BANDS]);
+  int limit_l, limit_r, i = 0;
+  if(lenght_l >= PACKAGES_TO_SHOW) limit_l = PACKAGES_TO_SHOW;
+  else limit_l = lenght_l;
+  if(lenght_r >= PACKAGES_TO_SHOW) limit_r = PACKAGES_TO_SHOW;
+  else limit_r = lenght_r;
+
+  //left list
+  if(lenght_l > 0){
+    for(; i < limit_l; ++i){
+      sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id], i)->id,  get_at(*lists[thread_id], i)->priority);
+    }
+  }
+  for(; i < (PACKAGES_TO_SHOW); ++i){
+    sprintf(buffer3, "%s-:-,", buffer3);
+  }
+  //division
+  sprintf(buffer3, "%sRemaining: %d\n", buffer3, lenght_l);
+  //right list
+  i = 0;
+  if(lenght_r > 0){
+    for(; i < limit_r; ++i){
+      sprintf(buffer3, "%s%d:%d,", buffer3,get_at(*lists[thread_id+NUMBER_BANDS], i)->id,  get_at(*lists[thread_id+NUMBER_BANDS], i)->priority);
+    }
+  }
+  for(; i < (PACKAGES_TO_SHOW); ++i){
+    sprintf(buffer3, "%s-:-,", buffer3);
+  }
+  //printf("%s\n",buffer3);
+  sprintf(buffer3, "%sRemaining: %d", buffer3, lenght_r);
+  return buffer3;
+}
+
+void write_progress(int thread_id, int list_id, short side){
+  //write progress to file
+  sprintf(buffer1, "%d\n%d\n%d\n%d\n%s", get_at(*lists[list_id], 0)->id,
+          get_at(*lists[list_id], 0)->progress, get_at(*lists[list_id], 0)->priority, side,
+          get_first_packages(thread_id));
+  sprintf(buffer2, "../../gui/data/band_%d.txt", thread_id);
+  write_file(buffer2, buffer1);
+}
+
+void update_progress(package_t* pack, enum scheduler_type type){
+  //printf("%s\n", "updating");
+  if(type == ROUND_ROBIN || type == RTOS) pack->current_execution_time = get_used_time(pack) + pack->accum_execution_time;
+  else pack->current_execution_time = get_used_time(pack);
+
+  pack->progress = (short) (pack->speed * pack->current_execution_time);
+  pack->remaining_time = pack->total_execution_time - pack->current_execution_time;
+
+  //printf("Progress of package: %d is %d. Remaining time: %fs/%fs\n", pack->id, pack->progress, pack->remaining_time, pack->total_execution_time);
+}
+
+
+/*
+ * AUX FUNCTIONS
+ */
+
+void wait_seconds(double seconds){
+  clock_t start;
+  start = clock();
+  double elapsed_time = 0;
+  while(elapsed_time < seconds){
+    elapsed_time = ((double) (clock() - start)) / CLOCKS_PER_SEC ;
+  }
 }
