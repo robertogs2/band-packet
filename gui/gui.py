@@ -316,21 +316,22 @@ class App:
     if self.ardu is not None:
       self.mutex.acquire()
       line = command + ":" + str(band) + ":" + str(state)
-      print("Sennding: " + line)
+      #print("Sennding: " + line)
       self.ardu.write(line.encode())
-      print("Sent")
-      inp = str(self.ardu.readline())
-      print(inp)
-      # if(inp.startswith("pins", 0)):
-      #   splitted = inp.split("-")
-      #   print("Button0: " + str(splitted[0]))
-      #   print("Button1: " + str(splitted[1]))
-      #   print("Button2: " + str(splitted[2]))
-      #time.sleep(0.1)
+      #print("Sent")
+      inp = self.ardu.readline().decode("utf-8") 
+      #print(inp)
+      if(inp.startswith("pins", 0)):
+        splitted = inp.split("-")
+        button0 = str(splitted[1])
+        #print("Button0: " +button0)
+        button1 = str(splitted[2])
+        #print("Button1: " +button1)
+        button2 = str(splitted[3])
+        #print("Button2: " +button2)
+        button_file = open(f'{self.directory}/data/buttons.txt', "w+")
+        button_file.write(f'{button0}{button1}{button2}')
+        button_file.close()
       self.mutex.release()
 
-    # get_box_strings()
-    # // write_hardware(band, "packet", progress);
-    # // write_hardware(band, "rgb", packet_priority);
-    # // write_hardware(band, "sign", side);
 app = App()

@@ -41,8 +41,6 @@ int pkg_counters[NUMBER_LISTS];
 Node_t** lists[NUMBER_LISTS];
 side_controller_t ctrls[NUMBER_BANDS];
 
-FILE* serial_file;
-
 void write_file(const char* filename, const char* msg);
 char* get_first_packages(int thread_id);
 void write_progress(int thread_id, int list_id, short side);
@@ -50,6 +48,7 @@ int write_hardware(int band, char* command, int state);
 void wait_seconds(double seconds);
 void update_progress(package_t* pack, enum scheduler_type type);
 int toggle_pause();
+int toggle_pause_buttons();
 int create_gui();
 int process_packages(void* params_ptr);
 int package_generation();
@@ -77,63 +76,6 @@ int main(int argc, char** argv) {
  * THREAD FUNCTIONS
  */
 
-// int initialize_hardware(){
-//   printf("Starting serial port %s\n", serial_port);
-//   serial_file = fopen(serial_port, "w");
-//   //printf("Serial fd : %d\n", serial_file);
-  
-//   // struct termios options;
-//   // tcgetattr(serial_fd, &options);
-//   // cfsetispeed(&options, B115200);
-//   // cfsetospeed(&options, B115200);
-//   // options.c_cflag |= (CLOCAL | CREAD);
-//   // tcsetattr(serial_fd, TCSANOW, &options);
-//   // //8 bit characters  
-//   // options.c_cflag &= ~CSIZE; /* Mask the character size bits */
-//   // options.c_cflag |= CS8;    /* Select 8 data bits */
-//   // //No parity
-//   // options.c_cflag &= ~PARENB;
-//   // options.c_cflag &= ~CSTOPB;
-// }
-
-// // 0 for packet, 1 for rgb, 2 for sign
-// int write_hardware(int band, char* command, int state){
-//   char buffer[30];
-//   char buffer_echo[100];
-//   sprintf(buffer, "%s:%d:%d", command, band, state);
-//   int n = strlen(buffer);
-//   if(serial_file){ // serial configured
-//     printf("%s: %d\n", "Writing to hardware", n);
-//     printf("%s\n", buffer);
-//     //write(serial_fd,buffer,n);
-//     //sprintf(buffer_echo, "echo \"%s\" > %s", buffer,serial_port);
-//     printf("Echoing %s\n", buffer_echo);
-//     //system(buffer_echo);
-//     fprintf(serial_file, buffer, n);
-//   }
-//   else{
-//     printf("%s\n", "Serial not configured");
-//   }
-// }
-
-// int read_hardware(){
-//   //sprintf(buffer, "%s:%d:%d", command, band, state);
-//   int n = 30;
-//   char buffer[30];
-//   while(true){
-//     if(serial_file){ // serial configured
-//       fread(buffer, n, 1, serial_file);
-//       if(strlen(buffer) > 0) printf("%s\n", buffer);
-//       if(strncmp(buffer, "si", 2) == 0){
-//         printf("%s\n", "found sign");
-//       }
-//     }
-//     else{
-//       printf("%s\n", "Serial not configured");
-//     }
-//   } 
-// }
-
 
 int toggle_pause(){
   char key;
@@ -151,6 +93,26 @@ int toggle_pause(){
     else if(strcmp(&key, "2") == 0){
       printf("Toggle band 2");
       params_2->running = !params_2->running;
+    }
+  }
+}
+
+int toggle_pause_buttons(){
+  char key;
+  //enable pause
+  
+  char buffer[3];
+  while(true){
+    int fd = open("../../gui/data/buttons.txt", O_RDONLY);
+    if(fd > 0){
+      int r = read(fd, buffer, 3);
+      char button0 = buffer[0];
+      char button1 = buffer[1];
+      char button2 = buffer[2];
+      params_0->running = button0 == '1' ? false : true;
+      params_1->running = button1 == '1' ? false : true;
+      params_2->running = button2 == '1' ? false : true;
+      close(fd);
     }
   }
 }
@@ -396,6 +358,8 @@ void initialize_threads(){
   if(Lthread_create(&t_gui, NULL, &create_gui, NULL) != 0) printf("\nCould not created Thread GUI\n");
   lpthread_t t_pause;
   if(Lthread_create(&t_pause, NULL, &toggle_pause, NULL) != 0) printf("\nCould not created Thread Pause\n");
+  lpthread_t t_pause_hardware;
+  if(Lthread_create(&t_pause_hardware, NULL, &toggle_pause_buttons, NULL) != 0) printf("\nCould not created Thread Pause Hardware\n");
   lpthread_t t_id_0;
   if(Lthread_create(&t_id_0, NULL, &process_packages, (void *) params_0) != 0) printf("\nCould not created Thread 0\n");
   lpthread_t t_id_1;
@@ -408,6 +372,7 @@ void initialize_threads(){
   Lthread_join(t_id_0, NULL);
   Lthread_join(t_id_1, NULL);
   Lthread_join(t_id_2, NULL);
+  Lthread_join(t_pause_hardware, NULL);
   Lthread_join(t_gui, NULL);
 }
 
@@ -474,9 +439,6 @@ void write_progress(int thread_id, int list_id, short side){
           get_first_packages(thread_id));
   sprintf(buffer2, "../../gui/data/band_%d.txt", band);
   write_file(buffer2, buffer1);
-  // write_hardware(band, "packet", progress);
-  // write_hardware(band, "rgb", packet_priority);
-  // write_hardware(band, "sign", side);
 }
 
 void update_progress(package_t* pack, enum scheduler_type type){

@@ -192,7 +192,7 @@ void reset(){
 void analize_command(String command){
   if(command.length() > 0){
     String split_string[10];
-    Serial.println(command);
+    //Serial.println(command);
     split(command, ':', split_string);
     if(split_string[0] == "rgb"){ // Color of the box
       int band = split_string[1].toInt();
@@ -228,7 +228,7 @@ void loop() {
   if(command.length() > 0){
     analize_command(command);
     //Serial.println(command);
-    //Serial.println("pins-" + String(digitalRead(pin_button0)) + "-" + String(digitalRead(pin_button1)) + "-" + String(digitalRead(pin_button2)));
+    Serial.println("pins-" + String(digitalRead(pin_button0)) + "-" + String(digitalRead(pin_button1)) + "-" + String(digitalRead(pin_button2)));
   }
   
   command = "";
