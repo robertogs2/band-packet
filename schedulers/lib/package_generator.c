@@ -102,17 +102,20 @@ int roll100(){
 // =============================================== DEFINE PACKAGE ATRIBUTES ===============================================
 
 /** Define the weight of packages according to their priority, assuming radiactive
- * packages are very heavy, in this version this is arbitrary.
+ * packages are consistently packed, ensures real time scheduling
  */
-float measureWeight (int priority){
-	int maxNormalWeight = 9;	// could turn to cts if important
-	int minNormalWeight = 1;
+float measureWeight (int priority, int scheduler, int qtm, int str, int len){
+	int laxity = 1;
 	if (priority==URGENT){
-		return 2.0;
+		return ((rand() % 20)+10.0)/10;
 	} else if (priority==RADIOACTIVE) {
-		return 15.0;
+		if (scheduler == 4) {
+			return str*(qtm+laxity)*(qtm+laxity)/len;
+		} else {
+			return 5.0;
+		}
 	} else {
-		return (rand() % (maxNormalWeight - minNormalWeight + 1))+1.0; // could make all random or semi-random
+		return ((rand() % 90)+10.0)/10; // could make all random or semi-random
 	}
 }
 
@@ -324,7 +327,7 @@ void createPackage(int* packageCounter, package_t* newPackage, int bandId){
 
 	config_t conf = get_config(bandId);
 	short pkgPriority = packageType(conf.packageRadsP,conf.packageUrgeP);
-	float pkgWeight = measureWeight(pkgPriority);
+	float pkgWeight = measureWeight(pkgPriority, conf.bandScheduler, conf.bandQuantum, conf.bandStrength, conf.bandLength);
 	short pkgSide = chooseSide(conf.packageLeftP);
 	double exeTime = timeOnBand(pkgWeight, conf.bandLength, conf.bandStrength);
 				
@@ -351,10 +354,10 @@ void createPackage(int* packageCounter, package_t* newPackage, int bandId){
  */
 void checkPackage(package_t* testPackage){
 	printf("Checking package id: %d \n", testPackage->id);
-	printf("  Package weight: %.2f \n", testPackage->weight);
+	printf("  Package weight: %.2f kg\n", testPackage->weight);
 	printf("  Package side: %d \n", testPackage->side);
 	printf("  Package piority: %d \n", testPackage->priority);
-	printf("  Package progress: %d \n", testPackage->progress);
+	printf("  Package progress: %d percent \n", testPackage->progress);
 	printf("  Package moves at: %.2f m/s", testPackage->speed);
 	printf(" in band: %d \n", testPackage->band);
 	printf("  Package has been on the band for %.2f s\n", testPackage->accum_execution_time);

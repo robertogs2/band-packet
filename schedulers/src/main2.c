@@ -13,15 +13,16 @@ int main (){
     int packageCounter = 0;
 
     // Start package generation
+    srand(time(0));
     config_t bandConf = get_config(bandId);
 
-    checkConfig(bandConf);
+    //checkConfig(bandConf);
 
     int mean = bandConf.bandMean;          // mean of packages created, cte?
-    int stdDev = bandConf.bandStdDev;         // variation of packages created (max 1/4 of mean), cte?
-    int newPkgs = randNum(mean, stdDev, bandConf.bandDistro);
+    int stdDev = bandConf.bandStdDev;
+    int newPkgs = 5; //randNum(mean, stdDev, bandConf.bandDistro);
 
-    srand(time(0));  
+      
 
     for(int i=0; newPkgs>i; ++i){
         package_t newPackage;
