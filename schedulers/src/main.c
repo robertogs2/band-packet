@@ -83,18 +83,16 @@ int toggle_pause(){
   while(true){
     scanf("%c", &key);
     if(strcmp(&key, "0") == 0){
-      printf("Toggle band 0");
       params_0->running = !params_0->running;
     }
     else if(strcmp(&key, "1") == 0){
-      printf("Toggle band 1");
       params_1->running = !params_1->running;
     }
     else if(strcmp(&key, "2") == 0){
-      printf("Toggle band 2");
       params_2->running = !params_2->running;
     }
   }
+  printf("Toggle band: \n");
 }
 
 int toggle_pause_buttons(){
@@ -102,6 +100,9 @@ int toggle_pause_buttons(){
   //enable pause
   
   char buffer[3];
+  int button_count[3] = {0};
+  int limit = 199;
+
   while(true){
     int fd = open("../../gui/data/buttons.txt", O_RDONLY);
     if(fd > 0){
@@ -109,9 +110,30 @@ int toggle_pause_buttons(){
       char button0 = buffer[0];
       char button1 = buffer[1];
       char button2 = buffer[2];
-      params_0->running = button0 == '1' ? false : true;
-      params_1->running = button1 == '1' ? false : true;
-      params_2->running = button2 == '1' ? false : true;
+      if(button0 == '1'){
+        if(++button_count[0] == limit){
+          params_0->running = !params_0->running;
+        }
+      }
+      else{
+        button_count[0] = 0;
+      }
+      if(button1 == '1'){
+        if(++button_count[1] == limit){
+          params_1->running = !params_1->running;
+        }
+      }
+      else{
+        button_count[1] = 0;
+      }
+      if(button2 == '1'){
+        if(++button_count[2] == limit){
+          params_2->running = !params_2->running;
+        }
+      }
+      else{
+        button_count[2] = 0;
+      }
       close(fd);
     }
   }
