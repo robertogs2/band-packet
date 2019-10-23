@@ -110,7 +110,7 @@ float measureWeight (int priority, int scheduler, int qtm, int str, int len){
 		return ((rand() % 20)+10.0)/10;
 	} else if (priority==RADIOACTIVE) {
 		if (scheduler == 4) {
-			return (str*(qtm-laxity)*(qtm-laxity))/len;
+			return (str*(qtm-laxity)*(qtm-laxity))/(len+(roll100()*2));
 		} else {
 			return ((rand() % 20)+40.0)/10;
 		}
