@@ -108,7 +108,6 @@ int schedule_real_time(Node_t **list_packages) {
     }
   }
   if(changed){
-    //printf("Setting time for package: %d\n", get_at(*list_packages,0)->id);
     //set start time of new package
     set_usage_time_start(get_at(*list_packages,0));
   }
