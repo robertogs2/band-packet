@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
  * THREAD FUNCTIONS
  */
 
-
+// Toggles the pause for some thread
 int toggle_pause(){
   char key;
   //enable pause
@@ -89,6 +89,7 @@ int toggle_pause(){
   printf("Toggle band: \n");
 }
 
+// Toggles coming from the buttons
 int toggle_pause_buttons(){
   char key;
   //enable pause
@@ -133,6 +134,8 @@ int toggle_pause_buttons(){
   }
 }
 
+
+// Function to start the gui
 int create_gui(){
   system("python3 ../../gui/gui.py");
   return 0;
@@ -145,8 +148,6 @@ int process_packages(void* params_ptr){
   if(params->type == RTOS){
     //start algorithm
     schedule_real_time(lists[params->side_id]);
-    printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
-    print_list(*lists[params->side_id],0);
     set_usage_time_start(get_at(*lists[params->side_id], 0));
     while(get_length(*lists[params->side_id]) > 0) {
       if (params->running) {
@@ -160,14 +161,13 @@ int process_packages(void* params_ptr){
             //set time of new package
             set_usage_time_start(get_at(*lists[params->side_id], 0));
             update_progress(get_at(*lists[params->side_id], 0), RTOS);
-            write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+            write_progress(params->id, params->side_id, ctrl->last_side);
 
-            //print_list(*lists[params->side_id], 0);
           }
         } else {
           schedule_real_time(lists[params->side_id]);
           update_progress(get_at(*lists[params->side_id], 0), RTOS);
-          write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+          write_progress(params->id, params->side_id, ctrl->last_side);
         }
         wait_seconds(0.1);
       }
@@ -178,8 +178,6 @@ int process_packages(void* params_ptr){
   }
 
   else if(params->type == ROUND_ROBIN){
-    printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
-    print_list(*lists[params->side_id],0);
     //start algorithm
     set_usage_time_start(get_at(*lists[params->side_id], 0));
     while(get_length(*lists[params->side_id]) > 0){
@@ -194,25 +192,20 @@ int process_packages(void* params_ptr){
             //set time of new package
             set_usage_time_start(get_at(*lists[params->side_id], 0));
             update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
-            write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+            write_progress(params->id, params->side_id, ctrl->last_side);
 
-            //print_list(*lists[params->side_id],0);
           }
         }
         else{
           int completed = schedule_round_robin(lists[params->side_id], params->quantum);
-          //printf("id: %d, time: %f", params->side_id,  get_used_time(get_at(*lists[params->side_id], 0)));
           if (completed){
-            //printf("%s\n", "Complated");
             short sidee = control_band(ctrl);
             params->side_id = (sidee == 0) ? params->id:params->id+3;
-            //printf("%d\n", params->side_id);
             set_usage_time_start(get_at(*lists[params->side_id], 0));
             schedule_round_robin(lists[params->side_id], params->quantum);
           }
-          //printf("%d\n", get_at(*lists[params->side_id], 0)->progress);
           update_progress(get_at(*lists[params->side_id], 0), ROUND_ROBIN);
-          write_progress(params->id, params->side_id, ctrl->last_side);//params->side);
+          write_progress(params->id, params->side_id, ctrl->last_side);
         }
         wait_seconds(0.1);
       }
@@ -233,9 +226,6 @@ int process_packages(void* params_ptr){
       schedule_shortest_first(*lists[params->id + NUMBER_BANDS]);
     }
 
-    printf("Algorithm %s for thread %d ", scheduler_names[params->type], params->id);
-    print_list(*lists[params->side_id],0);
-
     set_usage_time_start(get_at(*lists[params->side_id], 0));
     //while there are packages
     while(get_length(*lists[params->side_id]) > 0) {
@@ -247,7 +237,6 @@ int process_packages(void* params_ptr){
           pop_front(lists[params->side_id]);
           short sidee = control_band(ctrl);
           params->side_id = (sidee == 0) ? params->id : params->id + 3;
-          //printf("Side %d\n", params->side_id);
           if (get_length(*lists[params->side_id]) > 0) {
             //schedule again
             if (params->type == PRIORITY) schedule_priority(*lists[params->side_id]);
@@ -271,6 +260,7 @@ int process_packages(void* params_ptr){
   return 0;
 }
 
+// Function to generate the packages
 int package_generation(){
   while(true){
 
@@ -298,9 +288,9 @@ int package_generation(){
   }
 }
 
-
+// Starts up the system
 void initialize_system(){
-  printf("Initializing system :(\n");
+  printf("Initializing system\n");
   Lmutex_init(&mutex_file, NULL);
   // Left
   lists[0] = &list_packages_0;
@@ -364,6 +354,8 @@ void initialize_system(){
   init_controller(&ctrls[2], lists[2], lists[5], params_2->control, band_conf_2.bandParameter);
 }
 
+
+// Initialices the required threads
 void initialize_threads(){
 
   lpthread_t t_gui;
@@ -393,7 +385,7 @@ void initialize_threads(){
  * GUI FUNCTIONS
  */
 
-
+// Writes to a file
 void write_file(const char* filename, const char* msg){
   Lmutex_lock(&mutex_file);
   sprintf(command, "echo '%s' > '%s'", msg, filename);
@@ -401,6 +393,7 @@ void write_file(const char* filename, const char* msg){
   Lmutex_unlock(&mutex_file);
 }
 
+// returns the first packages from a band in each side
 char* get_first_packages(int thread_id){
   //structure id:priority,id:priority...
   //initialize buffer
@@ -439,6 +432,7 @@ char* get_first_packages(int thread_id){
   return buffer3;
 }
 
+// Writes the progress of a band into a file 
 void write_progress(int thread_id, int list_id, short side){
   //write progress to file
   int packet_priority = get_at(*lists[list_id], 0)->priority;
@@ -453,6 +447,7 @@ void write_progress(int thread_id, int list_id, short side){
   write_file(buffer2, buffer1);
 }
 
+// Updates the progress for a given band
 void update_progress(package_t* pack, enum scheduler_type type){
   //printf("%s\n", "updating");
   if(type == ROUND_ROBIN || type == RTOS) pack->current_execution_time = get_used_time(pack) + pack->accum_execution_time;
@@ -468,6 +463,8 @@ void update_progress(package_t* pack, enum scheduler_type type){
 /*
  * AUX FUNCTIONS
  */
+
+// Wait function for a second amount
 
 void wait_seconds(double seconds){
   clock_t start;

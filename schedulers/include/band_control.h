@@ -88,7 +88,6 @@ void init_controller(side_controller_t* controller, Node_t** left_list, Node_t**
 
 	// Thread to change sign
 	if(type == SIGN_BAND){
-		printf("%p\n", controller);
 		lpthread_t* thread = (lpthread_t*) malloc(sizeof(lpthread_t));
 		Lthread_create(thread, NULL, &sign_changer, (void*) (controller));
 	}
