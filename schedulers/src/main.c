@@ -1,6 +1,5 @@
 #include "../include/linked_list.h"
 #include "../include/schedulers.h"
-//#include <pthread.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
@@ -12,7 +11,7 @@
 
 char* scheduler_names[5] = {"ROUND_ROBIN", "PRIORITY", "SHORTEST_FIRST", "FIFO", "RTOS"};
 char* control_names[3] = {"W", "SIGN", "RANDOM"};
-char* serial_port="/dev/ttyAM1";
+
 
 typedef struct ThreadParams{
     int id;
@@ -44,7 +43,6 @@ side_controller_t ctrls[NUMBER_BANDS];
 void write_file(const char* filename, const char* msg);
 char* get_first_packages(int thread_id);
 void write_progress(int thread_id, int list_id, short side);
-int write_hardware(int band, char* command, int state);
 void wait_seconds(double seconds);
 void update_progress(package_t* pack, enum scheduler_type type);
 int toggle_pause();
@@ -54,12 +52,8 @@ int process_packages(void* params_ptr);
 int package_generation();
 void initialize_system();
 void initialize_threads();
-int initialize_hardware();
 
 int main(int argc, char** argv) {
-  if(argc >= 2){
-    serial_port = argv[1];
-  }
   initialize_system();
   lpthread_t t_pkg_generation;
   if(Lthread_create(&t_pkg_generation, NULL, &package_generation, NULL))
@@ -279,29 +273,25 @@ int process_packages(void* params_ptr){
 
 int package_generation(){
   while(true){
-    int bandId = 0;
-    int counter_list = 0;
 
-    for(int j=0; j < NUMBER_LISTS; j++){
+    for(int j=0; j < NUMBER_BANDS; j++){
 
-      config_t bandConf = get_config(bandId);
-      int mean = bandConf.bandMean;          // mean of packages created, cte?
-      int stdDev = bandConf.bandStdDev;         // variation of packages created (max 1/4 of mean), cte?
+      config_t bandConf = get_config(j);
+      int mean = bandConf.bandMean;
+      int stdDev = bandConf.bandStdDev;
       int newPkgs = randNum(mean, stdDev, bandConf.bandDistro);
 
       for(int i=0; newPkgs>i; ++i){
         package_t * newPackage = malloc(sizeof(package_t));
-        createPackage(&pkg_counters[j], newPackage, bandId);
+        createPackage(&pkg_counters[j], newPackage, j);
         push_back(lists[j], newPackage);
       }
+      for(int i=0; newPkgs>i; ++i){
+        package_t * newPackage = malloc(sizeof(package_t));
+        createPackage(&pkg_counters[j+NUMBER_BANDS], newPackage, j);
+        push_back(lists[j+NUMBER_BANDS], newPackage);
+      }
 
-      if(counter_list >=LISTS_PER_BAND - 1){
-        bandId++;
-        counter_list = 0;
-      }
-      else{
-        counter_list ++;
-      }
     }
     INITIALIZED = 1;
     usleep( 5 * 1000000);
