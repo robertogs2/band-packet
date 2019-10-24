@@ -2,18 +2,18 @@
 
 #include "../include/lpthread.h"
 
-/* The lpthread "queue" */
+// List of threads
 static lpthread_t lpthreadList[MAX_FIBERS];
-/* The pid of the parent process */
+// Required pids
 static pid_t parent_pid;
 static pid_t group_pid;
-/* The number of active lpthreads */
+// Counter for threads
 static int numLPthreads = 0;
-
+// Variable to check if it already started
 static char started_ = 0;
 
 int Lthread_create(lpthread_t* thread, const lpthread_attr_t *attr, int (*start_routine)(void*), void* arg){
-	if(started_ == 0){
+	if(started_ == 0){ // Singleton for the system
 		init_threads();
 		started_=1;
 	}
@@ -35,16 +35,17 @@ int Lthread_create(lpthread_t* thread, const lpthread_attr_t *attr, int (*start_
 						CLONE_PARENT_SETTID|
 						CLONE_CHILD_CLEARTID|
 						CLONE_PTRACE, arg);
-	//printf("Started thread with pid/tid %d\n", thread->pid);
-	if(thread->pid==-1){
+	if(thread->pid==-1){ // Error in clone
 		free(thread->stack);
 		printf("Error: clone system call failed.\n");
 		return LF_CLONEERROR;
 	}
+	// Copies thread to list
 	thread->detached=0;
 	memcpy((void*)&lpthreadList[numLPthreads++], (void*)thread, sizeof(lpthread_t));
 	return LF_NOERROR;
 }
+
 int Lthread_exit(lpthread_t thread){
 	kill(thread.pid, SIGKILL);
 	return 0;
@@ -56,32 +57,11 @@ int Lthread_yield(){
 	return 0;
 }
 int Lthread_join(lpthread_t thread, void **retval){
-	//printf("%s%p\n", "joining",thread);
-	//int id = thread.pid;
 	int index = map_pid_index(thread.pid);
-	//printf("Thread to join id%d\n", id);
-	// Stop the others threads
 
 	if(lpthreadList[index].detached==0){
-		// for(int i = 0; i < numLPthreads; ++i){
-		// 	pid_t another_id = lpthreadList[i].pid;
-		// 	if(another_id != id && another_id > 0){
-		// 		printf("Stopping thread with id: %d\n", another_id);
-		// 		kill(another_id, SIGSTOP);
-		// 	}
-		// }
-
-		//printf("Joining: %d\n", thread.pid);
-		waitpid(thread.pid, 0, 0);
+		waitpid(thread.pid, 0, 0); // Key is here, wait for it to end
 		printf("%s\n", "done join");
-
-		// for(int i = 0; i < numLPthreads; ++i){
-		// 	pid_t another_id = lpthreadList[i].pid;
-		// 	if(another_id != id && another_id > 0){
-		// 		printf("Restarting thread with id: %d\n", another_id);
-		// 		kill(another_id, SIGCONT);
-		// 	}
-		// }
 
 		return 0;
 	}
@@ -96,22 +76,22 @@ int Lthread_detach(lpthread_t thread){
 }
 
 int Lmutex_init(lpthread_mutex_t* restrict mutex, const lpthread_mutexattr_t *restrict attr){
-	mutex->locked=0;
+	mutex->locked=0; // Set the mutex as unlocked
 	mutex->pid=0;
 	return 0;
 }
 int Lmutex_destroy(lpthread_mutex_t *mutex){
-	mutex->locked = 0;
+	mutex->locked = 0; // Set the mutex as unlocked
 	mutex->pid = 0;
 	return 0;
 }
 int Lmutex_unlock(lpthread_mutex_t *mutex){
-	mutex->locked = 0;
+	mutex->locked = 0; // Set the mutex as unlocked
 	mutex->pid = 0;
 	return 0;
 }
 int Lmutex_trylock(lpthread_mutex_t *mutex){
-	if(mutex->locked==0){
+	if(mutex->locked==0){ // If mutex is not locked, lock it
 		mutex->locked=1;
 		mutex->pid = getpid();
 		return 0;
@@ -129,22 +109,26 @@ int Lmutex_lock(lpthread_mutex_t *mutex){
 	return 0;
 }
 
-/* Initialize the lpthreads to null */
 void Lthread_end(){
+	// Kills the thread
 	killpg(getpgrp(), SIGKILL);
 }
 void init_threads(){
+	// Initialices
 	for (int i = 0; i < MAX_FIBERS; ++ i){
 		lpthreadList[i].pid = 0;
 		lpthreadList[i].stack = 0;
 	}
+	// Signal from terminal
 	signal(SIGINT, Lthread_end);
-	atexit(Lthread_end);
+	atexit(Lthread_end); // When parent ends
+	// Sets the required pids
 	group_pid = getpgrp();
 	parent_pid = getpid();
 
 }
 int map_pid_index(pid_t id){
+	// Search for that pid
 	for(int i = 0; i < MAX_FIBERS; ++i){
 		if(lpthreadList[i].pid == id){
 			return i;
